@@ -1,0 +1,10 @@
+name: Review event
+on:
+  pull_request_review:
+    types: [submitted, dismissed]
+permissions: {}
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Review changed; trusted Cross-group review workflow will re-evaluate open PRs."

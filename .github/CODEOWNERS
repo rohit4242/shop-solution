@@ -1,0 +1,6 @@
+# Populate with real GitHub organization teams after class agreement.
+# Examples only; commented entries do not request or enforce reviews.
+# /src/features/logistics/ @your-org/logistics
+# /src/shared/ @your-org/maintainers
+# /prisma/ @your-org/maintainers
+# /docs/ @your-org/maintainers

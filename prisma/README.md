@@ -1,0 +1,1 @@
+Auth models belong to Admin & Identity. Commerce domains remain unassigned; agree their owners before adding tables. Generate Prisma client after schema changes, create migrations with pnpm db:migrate and apply committed migrations with pnpm db:deploy. Never edit applied migration SQL. Use a separate disposable database for tests.

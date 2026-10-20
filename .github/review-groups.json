@@ -1,0 +1,15 @@
+{
+  "requiredOtherGroups": 2,
+  "groups": {
+    "accounting": [],
+    "admin-identity": [],
+    "analytics-reporting": [],
+    "crm": [],
+    "logistics": [],
+    "marketing": [],
+    "marketplace": [],
+    "reviews-ratings": [],
+    "search-recommendations": [],
+    "storefront": []
+  }
+}
