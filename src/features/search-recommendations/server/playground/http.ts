@@ -31,7 +31,7 @@ export async function playgroundRun(request: Request) {
     return failure(403, "Same-origin requests are required.");
   if (process.env.PLAYGROUND_ENABLED !== "true")
     return failure(503, "The playground is disabled.");
-  if (!process.env.CHAT_AI_API_KEY || !process.env.CHAT_AI_BASE_URL)
+  if (!process.env.OPENAI_API_KEY)
     return failure(503, "The model connection is not configured.");
   try {
     // Enforce a byte cap while reading, including requests without Content-Length.

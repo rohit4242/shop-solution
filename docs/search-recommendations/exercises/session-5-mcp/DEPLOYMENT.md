@@ -2,7 +2,7 @@
 
 The whole Next.js app (all teams) deploys as one Vercel project. Every merge to `main` then updates the live site, so classmates always see the current API, docs and MCP endpoint.
 
-Our feature needs no database. The search API, docs and MCP server work with only the required variables below. The playground also needs a Chat AI key and an access code.
+Our feature needs no database. The search API, docs and MCP server work with only the required variables below. The playground also needs a model API key and an access code.
 
 ## One-time setup (repository owner)
 
@@ -21,9 +21,9 @@ Our feature needs no database. The search API, docs and MCP server work with onl
 | `DATABASE_URL`           | Admin & Identity only | a hosted PostgreSQL URL, once that team needs logins. Search ignores it  |
 | `PLAYGROUND_ACCESS_CODE` | playground            | a long random team code; share it with the team privately                |
 | `PLAYGROUND_ENABLED`     | playground            | `true` once the model settings below work                                |
-| `PLAYGROUND_MODELS_JSON` | playground            | as in `.env.example`, with a model ID that Chat AI offers                |
-| `CHAT_AI_API_KEY`        | playground            | the team's Academic Cloud Chat AI key                                    |
-| `CHAT_AI_BASE_URL`       | playground            | `https://chat-ai.academiccloud.de/v1`                                    |
+| `PLAYGROUND_MODELS_JSON` | playground            | as in `.env.example`, with model IDs your provider offers                |
+| `OPENAI_API_KEY`         | playground            | the team's API key for an OpenAI-compatible provider                     |
+| `OPENAI_BASE_URL`        | playground (optional) | leave unset for OpenAI; set it for OpenRouter, Groq, Gemini and others   |
 
 You don't need `SEARCH_API_BASE_URL` on Vercel: the app reads its own address from Vercel's system variables. Never put secrets in the repository.
 

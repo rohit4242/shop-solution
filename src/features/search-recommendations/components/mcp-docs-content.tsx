@@ -122,7 +122,7 @@ export function McpDocsContent({ slug }: { slug: string }) {
             team playground
           </Link>{" "}
           is locked with a shared team access code, because every run uses the
-          team&apos;s Chat AI key. Ask your team for the code.
+          team&apos;s model API key. Ask your team for the code.
         </p>
         <ol className="list-decimal space-y-3 pl-5">
           <li>
@@ -183,9 +183,10 @@ python smoke.py        # call every tool once
 mcp dev server.py      # MCP Inspector
 python agent.py "Find in-stock wireless products under €25."`}</pre>
         <p>
-          <code>agent.py</code> is our stage 4 agent. Set CHAT_AI_API_KEY and
-          CHAT_AI_MODEL in your shell first, and never commit the key. Set
-          SEARCH_API_BASE_URL to use a deployed API instead of localhost.
+          <code>agent.py</code> is our stage 4 agent. Set OPENAI_API_KEY and
+          OPENAI_MODEL in your shell first (plus OPENAI_BASE_URL for a provider
+          other than OpenAI), and never commit the key. Set SEARCH_API_BASE_URL
+          to use a deployed API instead of localhost.
         </p>
       </div>
     );

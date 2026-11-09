@@ -344,8 +344,8 @@ export function SearchPlayground() {
           </Button>
         </form>
         <p className="text-sm text-muted-foreground">
-          The playground runs a real model on the team&apos;s Chat AI key, so it
-          is locked. Ask your team for the code. The API, MCP server and docs
+          The playground runs a real model on the team&apos;s model API key, so
+          it is locked. Ask your team for the code. The API, MCP server and docs
           are open to everyone.
         </p>
         {error && (
@@ -388,7 +388,7 @@ export function SearchPlayground() {
       </header>
       {(!config.enabled || !config.profiles.length) && (
         <p role="status" className="rounded-lg border p-4 text-sm">
-          The playground is not configured for live runs. Set CHAT_AI_API_KEY,
+          The playground is not configured for live runs. Set OPENAI_API_KEY,
           PLAYGROUND_MODELS_JSON and PLAYGROUND_ENABLED=true on the server.
         </p>
       )}
