@@ -1,0 +1,9 @@
+{
+  "model": "gpt-6-astra",
+  "reasoning_effort": "medium",
+  "cli": "0.163.0-alpha.11",
+  "contract_status": "provisional; actual review pending; user authorised proceeding",
+  "context_sha256": "5eccd04445dddd686428b3238f9e9423db5bd06b6bd868c766cbbeaa4545c9f7",
+  "isolation": "fresh CLI exec with separate folders and ignore-user-config; shared dependency symlink; filesystem is not a confidentiality boundary",
+  "interventions": 0
+}

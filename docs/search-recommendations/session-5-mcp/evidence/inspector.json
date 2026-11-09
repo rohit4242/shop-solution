@@ -1,0 +1,244 @@
+{
+  "tools": [
+    {
+      "name": "search",
+      "description": "Find public products by text and filters. Empty q browses. Prices are EUR cents: maxPriceMinor=2500 means €25. Use productId from returned items for recommendations. Defaults include active out-of-stock offers. Returns items, total and pagination.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "default": "",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200,
+            "description": "Trimmed; at most 200 characters and 20 terms. Empty allows browsing. Default: empty."
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Exact category name, 1–128 characters."
+          },
+          "sellerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Exact seller identifier, 1–128 characters."
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["in_stock", "out_of_stock"],
+            "description": "in_stock or out_of_stock. Omit to include both."
+          },
+          "minPriceMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Inclusive minimum, nonnegative safe integer in euro cents."
+          },
+          "maxPriceMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Inclusive maximum; must be at least minPriceMinor."
+          },
+          "sort": {
+            "default": "relevance",
+            "type": "string",
+            "enum": ["relevance", "price_asc", "price_desc", "name_asc"],
+            "description": "relevance, price_asc, price_desc, or name_asc. Default: relevance."
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Positive safe integer. Pages beyond the end return empty items. Default: 1."
+          },
+          "pageSize": {
+            "default": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "1–100 items per page. Default: 20."
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "facets",
+      "description": "Discover filter values and counts for a search. Each facet ignores its own filter; price range ignores both price bounds. Prices are EUR cents. Returns categories, sellers, availability counts and a nullable price range.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "default": "",
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200,
+            "description": "Trimmed; at most 200 characters and 20 terms. Empty allows browsing. Default: empty."
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Exact category name, 1–128 characters."
+          },
+          "sellerId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Exact seller identifier, 1–128 characters."
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["in_stock", "out_of_stock"],
+            "description": "in_stock or out_of_stock. Omit to include both."
+          },
+          "minPriceMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Inclusive minimum, nonnegative safe integer in euro cents."
+          },
+          "maxPriceMinor": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Inclusive maximum; must be at least minPriceMinor."
+          }
+        },
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "autocomplete",
+      "description": "Suggest product names from a normalized full-name prefix, e.g. q=\"wire\". Requires at least two characters. Returns suggestions with productId and name, or an empty list.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 200,
+            "description": "At least 2 characters; at most 200 characters and 20 terms. Normalized name prefix."
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Exact category name, 1–128 characters."
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["in_stock", "out_of_stock"],
+            "description": "in_stock or out_of_stock. Omit to include both."
+          },
+          "limit": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10,
+            "description": "1–10 suggestions. Default: 5."
+          }
+        },
+        "required": ["q"],
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "similar",
+      "description": "Find alternatives to an active product, e.g. productId=\"prd_1\" from search. Ranks same-category products by shared attributes and price difference, excluding the source. Missing or hidden source returns 404. Returns items, possibly empty. Not purchase evidence.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Active source product identifier, 1–128 characters."
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["in_stock", "out_of_stock"],
+            "description": "in_stock or out_of_stock. Omit to include both."
+          },
+          "limit": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "1–20 items. Default: 5."
+          }
+        },
+        "required": ["productId"],
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "also_bought",
+      "description": "Find products occurring with productId (e.g. \"prd_1\") in synthetic purchase groups. Returns items ranked by co-occurrence, excluding the source. Missing/hidden source returns 404. No evidence means empty items: do not substitute similarity or claim real customer behavior.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "description": "Active source product identifier, 1–128 characters."
+          },
+          "availability": {
+            "type": "string",
+            "enum": ["in_stock", "out_of_stock"],
+            "description": "in_stock or out_of_stock. Omit to include both."
+          },
+          "limit": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "description": "1–20 items. Default: 5."
+          }
+        },
+        "required": ["productId"],
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

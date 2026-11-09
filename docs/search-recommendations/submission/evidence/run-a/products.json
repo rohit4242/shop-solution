@@ -1,0 +1,56 @@
+[
+  {
+    "productId": "p-03",
+    "name": "Trail Bottle",
+    "categoryId": "outdoors",
+    "priceMinor": 1500,
+    "currency": "EUR",
+    "tags": ["steel"],
+    "isPublished": true
+  },
+  {
+    "productId": "p-02",
+    "name": "Alpine Mug",
+    "categoryId": "home",
+    "priceMinor": 1500,
+    "currency": "EUR",
+    "tags": ["ceramic"],
+    "isPublished": true
+  },
+  {
+    "productId": "p-04",
+    "name": "Hidden Mug",
+    "categoryId": "home",
+    "priceMinor": 1200,
+    "currency": "EUR",
+    "tags": ["ceramic"],
+    "isPublished": false
+  },
+  {
+    "productId": "p-01",
+    "name": "Alpine Mug",
+    "categoryId": "home",
+    "priceMinor": 1000,
+    "currency": "EUR",
+    "tags": ["ceramic", "blue"],
+    "isPublished": true
+  },
+  {
+    "productId": "p-06",
+    "name": "Free Sample",
+    "categoryId": "home",
+    "priceMinor": 0,
+    "currency": "EUR",
+    "tags": ["sample"],
+    "isPublished": true
+  },
+  {
+    "productId": "p-05",
+    "name": "Desk Lamp",
+    "categoryId": "home",
+    "priceMinor": 3000,
+    "currency": "EUR",
+    "tags": ["light"],
+    "isPublished": true
+  }
+]

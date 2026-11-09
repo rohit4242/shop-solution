@@ -25,5 +25,13 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm contract:check
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r tools/search-recommendations-mcp/requirements.lock
+      - run: python -m pytest tools/search-recommendations-mcp/test_adapter.py
       - run: pnpm format:check
       - run: pnpm build

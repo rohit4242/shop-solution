@@ -3,3 +3,5 @@ node_modules
 src/generated
 package-lock.json
 pnpm-lock.yaml
+# Frozen prior-exercise evidence must not be reformatted.
+docs/search-recommendations/submission/evidence/

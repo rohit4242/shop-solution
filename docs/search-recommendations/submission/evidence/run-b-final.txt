@@ -1,0 +1,13 @@
+Implemented `searchProducts(products, filters)` returning `{ items, total }`.
+
+Files added:
+
+- [product-search.ts](/tmp/shop-search-exercise-20261025/run-b/product-search.ts): validated filters, published-only matching, inclusive prices, lexical sorting, and independent summaries.
+- [product-search.test.ts](/tmp/shop-search-exercise-20261025/run-b/product-search.test.ts): 13 tests covering matching, boundaries, exclusions, validation, ordering, and immutability.
+
+Verification:
+
+- `./node_modules/.bin/vitest run` — 13 tests passed.
+- `./node_modules/.bin/tsc --noEmit` — passed.
+
+Assumptions: filters use `q`, `categoryId`, `minPriceMinor`, and `maxPriceMinor`; prices are euro cents. Invalid filters throw `ZodError`. Catalog records are trusted inputs and aren’t runtime-validated. No HTTP, pagination, UI, or recommendations were added.
