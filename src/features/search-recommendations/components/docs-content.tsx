@@ -10,6 +10,9 @@ import {
 import { endpointDefinitions, docsBase, isEndpointKey } from "../docs/registry";
 import { CodeBlock, CodeExamples } from "./code-examples";
 import { RequestExplorer } from "./request-explorer";
+import { displayOrigin } from "../server/origin";
+// The deployed address on Vercel, localhost in development.
+const baseUrl = () => displayOrigin() ?? "http://localhost:3000";
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 const linkClass = "underline underline-offset-4 hover:text-muted-foreground";
 function Section({
@@ -97,7 +100,7 @@ export function DocsContent({ slug }: { slug: string }) {
             examples={[
               {
                 label: "cURL",
-                code: `curl --get 'http://localhost:3000${url}'`,
+                code: `curl --get '${baseUrl()}${url}'`,
               },
               {
                 label: "JavaScript",
@@ -162,10 +165,10 @@ console.log(result.data);`,
             are not connected.
           </div>
           <Section title="Server">
-            <CodeBlock code="http://localhost:3000" />
+            <CodeBlock code={baseUrl()} />
             <p className="text-sm text-muted-foreground">
-              Use the origin of your running application. No shared hosted
-              deployment has been configured.
+              No token is needed. When you run the repository yourself with pnpm
+              dev, use http://localhost:3000 instead.
             </p>
             <Link className={linkClass} href={`${docsBase}/quick-start`}>
               Make your first request →
@@ -211,10 +214,11 @@ console.log(result.data);`,
     case "quick-start":
       return (
         <div className="space-y-8">
-          <Section title="1. Start the application">
+          <Section title="1. Pick a server">
             <p>
-              Install the repository’s pinned dependencies and follow its
-              environment setup, then run:
+              The examples below call {baseUrl()}. To run the API yourself,
+              install the repository’s pinned dependencies and run the command
+              below, then use http://localhost:3000.
             </p>
             <CodeBlock code="pnpm dev" />
             <p className="text-sm text-muted-foreground">
@@ -223,14 +227,16 @@ console.log(result.data);`,
             </p>
           </Section>
           <Section title="2. Search the mock catalog">
-            <CodeBlock code="curl 'http://localhost:3000/api/v1/search?q=wireless'" />
+            <CodeBlock code={`curl '${baseUrl()}/api/v1/search?q=wireless'`} />
             <p>
               The response contains Wireless Mouse, product ID prd_1. No token
               is required.
             </p>
           </Section>
           <Section title="3. Request recommendations">
-            <CodeBlock code="curl 'http://localhost:3000/api/v1/recommendations/also-bought?productId=prd_1'" />
+            <CodeBlock
+              code={`curl '${baseUrl()}/api/v1/recommendations/also-bought?productId=prd_1'`}
+            />
             <p>
               These results come from synthetic grouped purchases, not actual
               customer behavior.

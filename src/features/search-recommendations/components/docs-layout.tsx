@@ -12,12 +12,22 @@ export function DocsLayout({ children }: { children: React.ReactNode }) {
       </a>
       <header className="sticky top-0 z-30 border-b bg-background">
         <div className="mx-auto flex min-h-20 max-w-7xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <Link
-            href={docsBase}
-            className="text-sm font-semibold tracking-tight sm:text-base"
-          >
-            Search & Recommendations Docs
-          </Link>
+          <nav className="flex flex-wrap items-center gap-2 text-sm sm:text-base">
+            <Link href="/" className="text-muted-foreground hover:underline">
+              Shop Solution
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <Link
+              href="/docs"
+              className="text-muted-foreground hover:underline"
+            >
+              Docs
+            </Link>
+            <span className="text-muted-foreground">/</span>
+            <Link href={docsBase} className="font-semibold tracking-tight">
+              Search & Recommendations
+            </Link>
+          </nav>
           <div className="flex items-center gap-3 text-xs">
             <span className="rounded-md border px-2 py-1 text-muted-foreground">
               v1 · Mock data
