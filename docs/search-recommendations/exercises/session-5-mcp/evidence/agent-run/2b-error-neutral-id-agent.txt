@@ -1,0 +1,7 @@
+$ python agent.py "Find alternatives to product prd_999."
+Model: gpt-4.1-mini · Tools: search, facets, autocomplete, similar, also_bought
+
+[1] similar({"productId":"prd_999","limit":5})
+    -> ERROR 404 PRODUCT_NOT_FOUND: Product not found.
+
+The product with ID prd_999 does not exist in the catalog, so I cannot find alternatives for it. If you have another product in mind, please let me know!

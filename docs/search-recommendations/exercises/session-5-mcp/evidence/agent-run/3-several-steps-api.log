@@ -1,0 +1,6 @@
+{"type":"discovery-request","requestId":"ef57d838-66f5-466d-8772-e8985941caf1","operation":"search","method":"GET","path":"/api/v1/search","query":{"q":"Wireless Mouse","availability":"in_stock","sort":"relevance","page":"1","pageSize":"1"},"status":200,"durationMs":0}
+ GET /api/v1/search?q=Wireless+Mouse&availability=in_stock&sort=relevance&page=1&pageSize=1 200 in 10ms (next.js: 1.4ms, application-code: 8ms)
+{"type":"discovery-request","requestId":"7f6a0555-65e9-46b6-b433-5a246e2b3866","operation":"similar","method":"GET","path":"/api/v1/recommendations/similar","query":{"productId":"prd_1","availability":"in_stock","limit":"5"},"status":200,"durationMs":0}
+ GET /api/v1/recommendations/similar?productId=prd_1&availability=in_stock&limit=5 200 in 13ms (next.js: 2ms, application-code: 11ms)
+{"type":"discovery-request","requestId":"f4053820-7117-4609-90f7-88dd1748bb5f","operation":"also-bought","method":"GET","path":"/api/v1/recommendations/also-bought","query":{"productId":"prd_1","availability":"in_stock","limit":"5"},"status":200,"durationMs":0}
+ GET /api/v1/recommendations/also-bought?productId=prd_1&availability=in_stock&limit=5 200 in 9ms (next.js: 1.9ms, application-code: 7ms)

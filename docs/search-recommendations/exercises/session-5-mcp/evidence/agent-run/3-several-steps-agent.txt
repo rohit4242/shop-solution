@@ -1,0 +1,21 @@
+$ python agent.py "Search for Wireless Mouse, then show similar and also-bought products for it."
+Model: gpt-4.1-mini · Tools: search, facets, autocomplete, similar, also_bought
+
+[1] search({"q":"Wireless Mouse","availability":"in_stock","pageSize":1})
+    -> {"items": [{"offerId": "off_1", "productId": "prd_1", "sellerId": "sel_2", "name": "Wireless Mouse", "category": "Electronics", "imageUrls": [], "priceMinor": …
+[2] similar({"productId": "prd_1", "availability": "in_stock", "limit": 5})
+    -> {"items": [{"offerId": "off_5", "productId": "prd_5", "sellerId": "sel_3", "name": "Desk Speaker", "category": "Electronics", "imageUrls": [], "priceMinor": 29…
+[3] also_bought({"productId": "prd_1", "availability": "in_stock", "limit": 5})
+    -> {"items": [{"offerId": "off_4", "productId": "prd_4", "sellerId": "sel_2", "name": "USB Keyboard", "category": "Electronics", "imageUrls": [], "priceMinor": 19…
+
+The wireless mouse I found is priced at €19.99.
+
+Similar products to the wireless mouse available in the shop include:
+1. Desk Speaker priced at €29.99
+2. Gaming Mouse priced at €39.99
+3. USB Keyboard priced at €19.99
+
+Products that were also bought together with the wireless mouse include:
+1. USB Keyboard priced at €19.99
+
+If you want more details or have other requests, just let me know!

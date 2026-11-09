@@ -1,0 +1,5 @@
+$ python agent.py "Find alternatives to product prd_missing."
+Model: gpt-4.1-mini · Tools: search, facets, autocomplete, similar, also_bought
+
+
+The product ID "prd_missing" does not exist, so I cannot find alternatives for it. If you provide a valid product ID or product name, I can help find alternatives for you.

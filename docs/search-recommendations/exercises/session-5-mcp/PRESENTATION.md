@@ -1,21 +1,41 @@
 # Five-minute presentation
 
-## 0:00–0:40 — Purpose
+## 0:00–0:40 Purpose
 
-We expose our existing search module to other agents through a standard MCP interface. Public results are mock products; purchase evidence is synthetic.
+Our search API now has an MCP server, so other teams' agents can find products and recommendations in the shop. The products are mock data, and the purchase data is a small synthetic sample.
 
-## 0:40–1:20 — Architecture and connection
+## 0:40–1:30 Architecture
 
-Show client → MCP → HTTP API → existing services. Show the five tools, OpenAPI resource, and the connection guide. Explain the Next.js framework deviation and its approval status.
+Show the chain: model → `agent.py` (MCP host and client) → `server.py` (MCP server, translates only) → Next.js API (all rules, request log).
 
-## 1:20–3:00 — Multi-step demonstration
+- **Five tools:** `search`, `facets`, `autocomplete`, `similar`, `also_bought`.
+- **Server design:** `Literal` enums for availability and sort, docstrings written for the model, the OpenAPI contract as a resource, and errors returned as text.
+- **API choice:** we kept our Next.js API instead of FastAPI because it already existed in the shared shop app.
+- **For other teams:** they connect at `/docs/search-recommendations/use-with-ai`.
 
-Search for Wireless Mouse, then compare similar and also-bought results using the returned ID. Show the playground trace, HTTP request IDs, actual responses and model settings. If real credentials are not configured, label the protocol demo as deterministic and do not describe it as an agent run.
+## 1:30–2:45 Live demo: several steps
 
-## 3:00–4:15 — Honest failures and missing evidence
+Run `python agent.py "Search for Wireless Mouse, then show similar and also-bought products for it."` with the API terminal next to it.
 
-Show the missing-product 404 and the empty co-purchase result for prd_5. Explain why an empty result must not silently become similarity recommendations. Include an actual description experiment only if performed.
+- The model calls `search` → `similar(prd_1)` → `also_bought(prd_1)`. It took the ID from the first result by itself.
+- Each tool call appears in the API log with a `requestId`.
+- The answer matches the API data.
 
-## 4:15–5:00 — Findings and limits
+## 2:45–4:15 The interesting finding
 
-Present the most interesting observation from the real run table when available. State what was tested, what remains unverified, and that a deployed mock demo is not a production commerce integration.
+- **`prd_missing`:** the model **never calls a tool**. It reads "missing" in the ID and answers "does not exist". The answer is right, but it's a guess.
+- **What we tried:**
+  - better tool descriptions: no change
+  - a stricter system prompt: no change
+- **`prd_999`:** with this neutral ID the model calls `similar` every time and reports the real `404 PRODUCT_NOT_FOUND`.
+- **Lesson:** descriptions guide the model, but they can't force a tool call. Forcing one is the host's job (`tool_choice="required"`).
+
+Also show the empty also-bought result for Desk Speaker. The model says "no purchase data" and doesn't replace it with similar products.
+
+## 4:15–5:00 Limits
+
+- **Model:** we tested one model (`gpt-4.1-mini`) with few runs per prompt.
+- **Filters:** the model sometimes adds filters nobody asked for (`in_stock`).
+- **Data:** mock data, not a real shop.
+
+All evidence is in [OBSERVATIONS.md](OBSERVATIONS.md) and [evidence/agent-run/](evidence/agent-run/).

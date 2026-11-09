@@ -1,0 +1,9 @@
+$ python agent.py "What do customers also buy with the Desk Speaker?"
+Model: gpt-4.1-mini · Tools: search, facets, autocomplete, similar, also_bought
+
+[1] search({"q":"Desk Speaker"})
+    -> {"items": [{"offerId": "off_5", "productId": "prd_5", "sellerId": "sel_3", "name": "Desk Speaker", "category": "Electronics", "imageUrls": [], "priceMinor": 29…
+[2] also_bought({"productId":"prd_5"})
+    -> {"items": []}
+
+There is no purchase data available for products that customers also buy with the Desk Speaker. If you want, I can help you find similar or alternative products to the Desk Speaker.

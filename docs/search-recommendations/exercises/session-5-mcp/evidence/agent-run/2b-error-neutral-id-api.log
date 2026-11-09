@@ -1,0 +1,2 @@
+{"type":"discovery-request","requestId":"bb451d0a-55ad-411f-9d2b-d64e3baf05c5","operation":"similar","method":"GET","path":"/api/v1/recommendations/similar","query":{"productId":"prd_999","limit":"5"},"status":404,"durationMs":0}
+ GET /api/v1/recommendations/similar?productId=prd_999&limit=5 404 in 8ms (next.js: 1.8ms, application-code: 6ms)
