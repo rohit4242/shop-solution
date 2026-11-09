@@ -41,9 +41,10 @@ const control = "w-full rounded-md border bg-background p-2 text-sm";
 type Config = { enabled: boolean; profiles: ModelProfile[] };
 // History lives in this browser's IndexedDB under one key for the whole team code.
 const HISTORY_KEY = "team";
+const CHECKING = "Checking access…";
 export function SearchPlayground() {
   const [config, setConfig] = useState<Config | null>(null),
-    [gate, setGate] = useState("Checking access…"),
+    [gate, setGate] = useState(CHECKING),
     [error, setError] = useState("");
   const [accessCode, setAccessCode] = useState("");
   const [settings, setSettings] = useState<PlaygroundSettings>(
@@ -332,11 +333,15 @@ export function SearchPlayground() {
               type="password"
               autoComplete="off"
               required
+              disabled={gate === CHECKING}
               value={accessCode}
               onChange={(e) => setAccessCode(e.target.value)}
             />
           </label>
-          <Button type="submit">Unlock</Button>
+          {/* Disabled until the page is interactive and the access check has answered. */}
+          <Button type="submit" disabled={gate === CHECKING}>
+            Unlock
+          </Button>
         </form>
         <p className="text-sm text-muted-foreground">
           The playground runs a real model on the team&apos;s Chat AI key, so it

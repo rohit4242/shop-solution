@@ -105,6 +105,10 @@ test("locked visitors see only the access-code gate; the right code unlocks it",
   await expect(
     page.getByRole("button", { name: "Run", exact: true }),
   ).toHaveCount(0);
+  // Wait until the page has hydrated and the access check has answered.
+  await expect(page.getByRole("status")).toHaveText(
+    "Enter the team access code to continue.",
+  );
   await page.getByLabel("Team access code").fill("wrong");
   await page.getByRole("button", { name: "Unlock" }).click();
   await expect(
