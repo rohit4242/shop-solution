@@ -1,0 +1,33 @@
+Read the following MODULE.md as module context first. The narrower task below overrides its broader HTTP/pagination scope.
+
+<MODULE>
+# Search & Recommendations
+
+## Purpose
+
+We provide discovery APIs; Storefront owns all customer UI/UX. Full scope: full-text search, filters/facets, autocomplete and co-purchase recommendations. First prototype: name search, category/price filters and similar products; no personalisation.
+
+## Structure
+
+Within this feature: `schemas/` validates inputs, `types/` defines contracts, `server/services/` holds matching/ranking, `server/repositories/` supplies mock/API catalog adapters, and `tests/` covers behaviour. These are currently scaffolds. `server/index.ts` is the server-only entry; `index.ts` stays client-safe. Planned thin HTTP routes live under `src/app/api/v1/`; no UI or database tables are owned here.
+
+## Interfaces (proposed; partner review pending)
+
+Admin & Identity owns catalog editing; confirm it supplies catalog API records: `{ productId: string, name: string, categoryId: string, priceMinor: number, currency: "EUR", tags: string[], isPublished: boolean }`. Use fictional fixtures until its endpoint, access and refresh contract are agreed. Never read another team's tables or import its internals.
+
+Storefront consumes `GET /api/v1/search` with optional `q`, `categoryId`, `minPriceMinor`, `maxPriceMinor`, `page`, `pageSize`; return `{ data: { items, total, page, pageSize } }`. Items contain `productId`, `name`, `categoryId`, `priceMinor`, `currency`. Match trimmed case-insensitive name substrings; empty query matches all published products. AND filters, exact category, inclusive prices. Sort by name then ID using lexical comparison; paginate after filtering (defaults 1/20, size at most 100).
+
+`GET /api/v1/recommendations/similar` takes `productId` and optional `limit` (default 5, maximum 20); return `{ data: { items } }`. Same item shape. Exclude source and unpublished products; same-category candidates rank by shared distinct tags descending then ID ascending. No matches returns `[]`.
+
+## Conventions
+
+Strict TypeScript; kebab-case files, camelCase functions, PascalCase types. Thin routes, pure testable business logic, server-only runtime entry points. Validate custom inputs with Zod: reject negative/non-integer prices, reversed bounds and invalid pagination. Errors: `{ error: { code, message } }`; 400 `INVALID_INPUT`, 404 `PRODUCT_NOT_FOUND` for unknown/unpublished source, 503 `CATALOG_UNAVAILABLE` for source failure. Public endpoints require no login but expose published products only. Vitest tests cover success, boundaries, exclusions and failure behaviour.
+
+## Pitfalls
+
+`priceMinor` is integer euro cents, not euros; IDs are opaque and category IDs are not names. Catalog supplies product facts; checkout revalidates prices. The flattened price is a mock projection; Marketplace offer ownership, price source and multi-offer selection remain unconfirmed. Similarity is NOT "customers also bought": that requires purchase relationships from an unassigned provider. Inventory ownership is also unresolved; do not assume Logistics. Never claim mock contracts, partner reviews or experiment outcomes are confirmed.
+</MODULE>
+
+Work only in this isolated project folder. Read products.json and package.json. Do not inspect parent folders, unrelated projects, personal instructions or other sessions. Dependencies are already available through node_modules; use ./node_modules/.bin/vitest run and ./node_modules/.bin/tsc --noEmit, without installation. Complete the task without asking clarification questions; state assumptions in your final answer.
+
+Implement a small product search function in this TypeScript project, with Vitest tests. Use the supplied catalog fixtures as the input data shape. Support an optional text query, category filter and minimum/maximum price filters. Trim the query and match product names case-insensitively by substring; an empty query matches all eligible records. Combine filters with AND and include both price boundaries. Return only published products. Reject negative or fractional price bounds and minimum greater than maximum. Keep the input unmodified. Make result ordering deterministic by product name and then product ID using lexical comparison. Return matching product summaries and their total count. No HTTP server, UI, external calls, pagination or recommendations are needed for this small task. Run tests and report the files changed, commands, results and limitations.

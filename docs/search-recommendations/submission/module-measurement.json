@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-26",
+  "encoding": "o200k_base",
+  "tokenizer": "tiktoken 0.14.0",
+  "tokens": 690,
+  "sha256": "d186714b0d648cc60fee9e28ac775433ac0719459a196f36cf79ee04d99c695d",
+  "experiment_context_tokens": 663,
+  "note": "Latest joint-review revision, not the context used in the recorded runs"
+}

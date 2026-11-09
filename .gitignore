@@ -9,3 +9,11 @@ test-results/
 .DS_Store
 *.tsbuildinfo
 src/generated/
+# Search MCP development
+.venv/
+__pycache__/
+.pytest_cache/
+.vercel/
+
+# Local pnpm cache
+.pnpm-store/
