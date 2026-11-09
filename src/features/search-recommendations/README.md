@@ -28,7 +28,7 @@ Errors: `INVALID_INPUT` (400), `PRODUCT_NOT_FOUND` (404), `CATALOG_UNAVAILABLE` 
 
 ## Development and verification
 
-Run `pnpm dev` and visit `/docs/search-recommendations`. The catalog does not require a database. The application retains its existing Prisma/auth setup. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. See [implementation verification](../../../docs/search-recommendations/IMPLEMENTATION-VERIFICATION.md) for actual results and local toolchain limitations.
+Run `pnpm dev` and visit `/docs/search-recommendations`. The catalog does not require a database. The application retains its existing Prisma/auth setup. Run `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. See [the docs entry page](../../../docs/search-recommendations/README.md).
 
 Tests exercise actual route exports, provider failures, visibility, ranking, filters, facets, pagination, snapshot concurrency, and documentation examples against real fixture responses. OpenAPI schemas are derived from Zod; prose covers rules JSON Schema cannot express, including repeated HTTP keys and price relationships.
 
@@ -36,7 +36,7 @@ Tests exercise actual route exports, provider failures, visibility, ranking, fil
 
 Marketplace, Admin and Storefront contract reviews plus two external-group approvals remain required before merge. Purchase ownership is not assigned to Accounting or Storefront by this implementation. Live sync, auth/admin search, webhooks, discounts, personalization, persistence and deployment are deferred.
 
-Historical exercise submission files and evidence remain unchanged. The current [MODULE.md](MODULE.md) describes implementation; submission/MODULE.md is a frozen exercise artifact.
+Historical exercise submission files and evidence remain unchanged. The current [MODULE.md](MODULE.md) describes implementation; docs/search-recommendations/exercises/session-4-context-package/MODULE.md is the frozen exercise version.
 
 ## MCP and team playground (Session 5)
 
@@ -44,4 +44,4 @@ The public Streamable HTTP endpoint `/api/mcp/search-recommendations` exposes fi
 
 `/docs/search-recommendations/playground` is a developer-only experiment surface, not Storefront UI. Better Auth sessions plus the explicit `PLAYGROUND_USER_IDS` allowlist gate `/api/search-playground/config` and `/api/search-playground/run`. The default configuration disables model runs. Model URLs/credentials stay server-side. Runs stream normalized event evidence and are stored only in each user's browser; no feature database tables were added.
 
-Read [Session 5 setup and status](../../../docs/search-recommendations/session-5-mcp/README.md). Run `pnpm contract:check`, `pnpm test:e2e` and the Python adapter tests in addition to the repository checks. The generated YAML and Python tool contract must remain in sync with Zod/metadata. No real provider or deployment capability is claimed until verified with genuine configuration.
+Read [Session 5 setup and status](../../../docs/search-recommendations/exercises/session-5-mcp/README.md). Run `pnpm contract:check`, `pnpm test:e2e` and the Python adapter tests in addition to the repository checks. The generated YAML and Python tool contract must remain in sync with Zod/metadata. No real provider or deployment capability is claimed until verified with genuine configuration.

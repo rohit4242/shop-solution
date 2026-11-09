@@ -6,7 +6,7 @@ The implemented developer reference is `/docs/search-recommendations`, and the d
 
 Marketplace's latest message confirms its proposed product/article and offer ownership, one offer per product, offer moderation and embedded product fields in GET /offers?updatedSince. Its final envelope, authentication, pagination and update semantics are not supplied. Admin acknowledgment and consumer review are pending. No repository-wide ownership change or live integration is implied.
 
-This supersedes earlier local endpoint proposals for the current implementation. Historical `API-CONTRACT-before-marketplace-review.md`, review notes and submission evidence remain preserved as historical records.
+This supersedes earlier endpoint proposals. Older review notes are kept under [exercises/session-4-context-package](exercises/session-4-context-package/README.md).
 
 ## Incoming data
 

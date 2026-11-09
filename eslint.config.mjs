@@ -7,6 +7,6 @@ export default defineConfig([
   globalIgnores([
     ".next/**",
     "src/generated/**",
-    "docs/search-recommendations/submission/evidence/**",
+    "docs/search-recommendations/exercises/session-4-context-package/evidence/**",
   ]),
 ]);
