@@ -6,7 +6,7 @@ The exercise: write an agreed OpenAPI contract, run an API behind it, put a thin
 
 | #   | Deliverable                                   | Where                                                                                           | Status                     |
 | --- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- |
-| 1   | `openapi.yaml` + note on changes after review | [../../openapi.yaml](../../openapi.yaml), [CONTRACT-REVIEW.md](CONTRACT-REVIEW.md)              | Contract done, review open |
+| 1   | `openapi.yaml` + note on changes after review | [../../openapi.yaml](../../openapi.yaml), [CONTRACT-REVIEW.md](CONTRACT-REVIEW.md)              | Done, agreed as 1.0.0      |
 | 2   | API and MCP server, with start instructions   | Next.js API in `src/features/search-recommendations`, MCP in `tools/search-recommendations-mcp` | Done                       |
 | 3   | Evidence of an agent run + Part 4 table       | [OBSERVATIONS.md](OBSERVATIONS.md), [evidence/](evidence/)                                      | Done (see OBSERVATIONS.md) |
 | 4   | Five-minute presentation                      | [PRESENTATION.md](PRESENTATION.md)                                                              | Outline                    |
@@ -58,4 +58,4 @@ The agent needs `OPENAI_API_KEY` and `OPENAI_MODEL` in your environment, plus `O
 - [evidence/protocol-smoke.jsonl](evidence/protocol-smoke.jsonl): a scripted run of all five tools over stdio and HTTP, including a 404 for `prd_missing` and an empty also-bought result for `prd_5`. This proves the transport works, not that a model picks the right tools.
 - [evidence/inspector.json](evidence/inspector.json): MCP Inspector CLI output listing the tools and reading the resource.
 
-Still to do: the three real agent prompts (Part 4), the contract review with Admin & Identity, and Inspector screenshots.
+Still to do: MCP Inspector screenshots (optional).
