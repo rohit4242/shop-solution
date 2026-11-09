@@ -8,7 +8,7 @@ The exercise: write an agreed OpenAPI contract, run an API behind it, put a thin
 | --- | --------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------------------- |
 | 1   | `openapi.yaml` + note on changes after review | [../../openapi.yaml](../../openapi.yaml), [CONTRACT-REVIEW.md](CONTRACT-REVIEW.md)              | Contract done, review open |
 | 2   | API and MCP server, with start instructions   | Next.js API in `src/features/search-recommendations`, MCP in `tools/search-recommendations-mcp` | Done                       |
-| 3   | Evidence of an agent run + Part 4 table       | [OBSERVATIONS.md](OBSERVATIONS.md), [evidence/](evidence/)                                      | Agent run still to do      |
+| 3   | Evidence of an agent run + Part 4 table       | [OBSERVATIONS.md](OBSERVATIONS.md), [evidence/](evidence/)                                      | Done (see OBSERVATIONS.md) |
 | 4   | Five-minute presentation                      | [PRESENTATION.md](PRESENTATION.md)                                                              | Outline                    |
 
 ## How the pieces fit

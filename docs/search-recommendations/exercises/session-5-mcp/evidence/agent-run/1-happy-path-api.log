@@ -1,0 +1,2 @@
+{"type":"discovery-request","requestId":"bc12ab7a-865b-47f3-8f79-ee7ace9ac3cf","operation":"search","method":"GET","path":"/api/v1/search","query":{"q":"wireless","availability":"in_stock","maxPriceMinor":"2500","sort":"relevance","page":"1","pageSize":"20"},"status":200,"durationMs":1}
+ GET /api/v1/search?q=wireless&availability=in_stock&maxPriceMinor=2500&sort=relevance&page=1&pageSize=20 200 in 11ms (next.js: 2ms, application-code: 9ms)

@@ -66,7 +66,7 @@ MinPrice = Annotated[int | None, Field(description="Lowest price in euro cents, 
 MaxPrice = Annotated[int | None, Field(description="Highest price in euro cents, inclusive. 2500 means €25.")]
 ProductId = Annotated[
     str,
-    Field(description='Product ID from a search or autocomplete result, e.g. "prd_1". Product IDs start with "prd_".'),
+    Field(description='Product ID, e.g. "prd_1", given by the user or taken from a search result. Pass it unchanged.'),
 ]
 
 
@@ -173,8 +173,10 @@ def similar(
     similar attributes and price.
 
     Use this when the user asks for alternatives or "something like" a product.
-    You need its productId first, so call search or autocomplete if you only
-    have a name. This is not purchase data; use also_bought for that.
+    If the user gives a productId, call this tool with it directly: only the
+    API knows which IDs exist, so never say a product is missing without
+    calling it. If you only have a name, call search first to get the ID.
+    This is not purchase data; use also_bought for that.
 
     Returns JSON with "items", best match first, never including the product
     itself. "ERROR 404 PRODUCT_NOT_FOUND" means the productId does not exist;
@@ -195,7 +197,8 @@ def also_bought(
     """Find products that were bought together with one product.
 
     Use this when the user asks what other customers bought with a product.
-    You need its productId first. The purchase data is a small synthetic
+    Call it directly with a productId the user gives; if you only have a
+    name, call search first. The purchase data is a small synthetic
     sample, not real customer behaviour.
 
     Returns JSON with "items", most often bought together first. An empty

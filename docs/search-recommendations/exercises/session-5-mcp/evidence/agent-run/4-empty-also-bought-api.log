@@ -1,0 +1,4 @@
+{"type":"discovery-request","requestId":"d18dd47a-180f-43b3-9150-cefac2be6056","operation":"search","method":"GET","path":"/api/v1/search","query":{"q":"Desk Speaker","sort":"relevance","page":"1","pageSize":"20"},"status":200,"durationMs":1}
+ GET /api/v1/search?q=Desk+Speaker&sort=relevance&page=1&pageSize=20 200 in 12ms (next.js: 3ms, application-code: 9ms)
+{"type":"discovery-request","requestId":"2779465d-4624-461e-a7d3-75bef11bfed4","operation":"also-bought","method":"GET","path":"/api/v1/recommendations/also-bought","query":{"productId":"prd_5","limit":"5"},"status":200,"durationMs":0}
+ GET /api/v1/recommendations/also-bought?productId=prd_5&limit=5 200 in 8ms (next.js: 1.6ms, application-code: 6ms)

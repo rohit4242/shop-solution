@@ -1,0 +1,7 @@
+$ python agent.py "Find in-stock wireless products under €25."
+Model: gpt-4.1-mini · Tools: search, facets, autocomplete, similar, also_bought
+
+[1] search({"q":"wireless","availability":"in_stock","maxPriceMinor":2500})
+    -> {"items": [{"offerId": "off_1", "productId": "prd_1", "sellerId": "sel_2", "name": "Wireless Mouse", "category": "Electronics", "imageUrls": [], "priceMinor": …
+
+I found a wireless product in stock under €25: a Wireless Mouse priced at €19.99. Would you like more details or other options?
