@@ -2,7 +2,7 @@
 
 Exercise Part 1: review [openapi.yaml](../../openapi.yaml) with our neighbouring team, note every agreed change, and give the agreed version a number in `info.version`.
 
-Current version: **1.0.0**, agreed with Admin & Identity on 2026-11-09 without changes.
+Current version: **1.0.0**, agreed with Admin & Identity and Marketplace on 2026-11-09 without changes.
 
 ## Questions we brought
 
@@ -19,8 +19,9 @@ Fill in one row per agreed change.
 | Date       | Reviewer / team                  | Requested change                                                                                                                  | Agreed resolution       | New version |
 | ---------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ----------- |
 | 2026-11-09 | Admin & Identity team (WhatsApp) | None. Our API is anonymous and needs nothing from their side; they confirmed there is no interaction between our features for now | Contract accepted as is | 1.0.0       |
+| 2026-11-09 | Marketplace team (WhatsApp)      | None                                                                                                                              | Contract accepted as is | 1.0.0       |
 
-Outcome of the questions: no personalisation for now, so we need no user ID, profile or permissions from Admin & Identity. The catalog source and ID formats are Marketplace topics; we asked them separately.
+Outcome of the questions: no personalisation for now, so we need no user ID, profile or permissions from Admin & Identity. Marketplace, whose offers our catalog is built from, also accepted the contract without changes.
 
 ## Other open items
 
