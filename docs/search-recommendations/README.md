@@ -10,6 +10,8 @@ Our team owns product search, filters, autocomplete and recommendations for the 
 | Read the machine-readable contract   | [openapi.yaml](openapi.yaml), served at `/docs/search-recommendations/openapi.yaml` too    |
 | Connect an AI agent over MCP         | [tools/search-recommendations-mcp](../../tools/search-recommendations-mcp/README.md)       |
 | Read or change the code              | [src/features/search-recommendations](../../src/features/search-recommendations/README.md) |
+| Give your AI agent access            | `/docs/search-recommendations/use-with-ai` on the running site                             |
+| Deploy the whole app to Vercel       | [exercises/session-5-mcp/DEPLOYMENT.md](exercises/session-5-mcp/DEPLOYMENT.md)             |
 | See our session 5 exercise (MCP)     | [exercises/session-5-mcp](exercises/session-5-mcp/README.md)                               |
 | See our session 4 exercise (context) | [exercises/session-4-context-package](exercises/session-4-context-package/README.md)       |
 

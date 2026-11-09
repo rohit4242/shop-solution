@@ -48,6 +48,10 @@ python agent.py "Find in-stock wireless products under €25."
 
 The agent needs `CHAT_AI_API_KEY` and `CHAT_AI_MODEL` in your environment. Never commit the key.
 
+## Deploy and share
+
+[DEPLOYMENT.md](DEPLOYMENT.md) explains the Vercel setup. Once deployed, other teams connect their agents from `/docs/search-recommendations/use-with-ai`.
+
 ## What has been checked
 
 - `pnpm test`, `pnpm contract:check` and the Python tests pass in CI.
