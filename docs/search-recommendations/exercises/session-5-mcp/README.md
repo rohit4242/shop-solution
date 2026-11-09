@@ -14,7 +14,7 @@ The exercise: write an agreed OpenAPI contract, run an API behind it, put a thin
 ## How the pieces fit
 
 ```text
-Model (Academic Cloud)
+Model (any OpenAI-compatible API)
    ⇅ tool calls
 agent.py (stage 4: MCP host + client)
    ⇅ tools/call over stdio
@@ -46,7 +46,7 @@ mcp dev server.py                      # MCP Inspector: list tools, call them, r
 python agent.py "Find in-stock wireless products under €25."
 ```
 
-The agent needs `CHAT_AI_API_KEY` and `CHAT_AI_MODEL` in your environment. Never commit the key.
+The agent needs `OPENAI_API_KEY` and `OPENAI_MODEL` in your environment, plus `OPENAI_BASE_URL` for a provider other than OpenAI. Never commit the key.
 
 ## Deploy and share
 

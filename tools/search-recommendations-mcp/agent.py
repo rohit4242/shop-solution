@@ -8,8 +8,9 @@ Same loop as the lecture's stage 4:
 Usage:
     python agent.py "Find in-stock wireless products under €25."
 
-Environment: CHAT_AI_API_KEY and CHAT_AI_MODEL (required), CHAT_AI_BASE_URL
-(defaults to Academic Cloud Chat AI), SEARCH_API_BASE_URL (passed to the server).
+Environment: OPENAI_API_KEY and OPENAI_MODEL (required), OPENAI_BASE_URL
+(optional; any OpenAI-compatible provider, defaults to OpenAI),
+SEARCH_API_BASE_URL (passed to the server).
 Run the API first (pnpm dev) and keep its terminal next to this one.
 """
 
@@ -54,10 +55,10 @@ def shorten(text: str, limit: int = 160) -> str:
 
 
 async def run(task: str) -> None:
-    model_name = os.environ["CHAT_AI_MODEL"]
+    model_name = os.environ["OPENAI_MODEL"]
     model = AsyncOpenAI(
-        api_key=os.environ["CHAT_AI_API_KEY"],
-        base_url=os.environ.get("CHAT_AI_BASE_URL", "https://chat-ai.academiccloud.de/v1"),
+        api_key=os.environ["OPENAI_API_KEY"],
+        base_url=os.environ.get("OPENAI_BASE_URL") or None,  # None = OpenAI
     )
     server = StdioServerParameters(
         command=sys.executable,
@@ -102,7 +103,7 @@ async def run(task: str) -> None:
 def main() -> None:
     if len(sys.argv) != 2:
         raise SystemExit(__doc__)
-    missing = [name for name in ("CHAT_AI_API_KEY", "CHAT_AI_MODEL") if not os.environ.get(name)]
+    missing = [name for name in ("OPENAI_API_KEY", "OPENAI_MODEL") if not os.environ.get(name)]
     if missing:
         raise SystemExit(f"Set {' and '.join(missing)} first. Never commit your API key.")
     sys.stdout.reconfigure(errors="replace")

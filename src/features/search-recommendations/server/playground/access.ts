@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
-// The playground spends our Chat AI key, so it is locked with one shared team
+// The playground spends our model API key, so it is locked with one shared team
 // code (PLAYGROUND_ACCESS_CODE). Entering the right code sets an httpOnly
 // cookie holding a hash of the code; changing the env value logs everyone out.
 

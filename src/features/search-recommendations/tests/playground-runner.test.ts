@@ -31,7 +31,7 @@ vi.mock("@ai-sdk/mcp", () => ({
     close: mocks.close,
   }),
 }));
-import { streamRun } from "../server/playground/runner";
+import { modelBaseUrl, streamRun } from "../server/playground/runner";
 import { runInputSchema } from "../schemas/playground";
 const profile = {
   id: "test",
@@ -54,7 +54,7 @@ const usage = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("SEARCH_API_BASE_URL", "http://localhost:3000");
-  vi.stubEnv("CHAT_AI_API_KEY", "test-secret");
+  vi.stubEnv("OPENAI_API_KEY", "test-secret");
 });
 it("uses the real SDK loop, emits tool results, and closes the MCP client", async () => {
   mocks.execute.mockResolvedValue({
@@ -187,4 +187,10 @@ it("stops before executing tools after cancellation", async () => {
   expect(text).toContain('"state":"cancelled"');
   expect(mocks.execute).not.toHaveBeenCalled();
   expect(mocks.close).toHaveBeenCalledTimes(1);
+});
+it("uses OpenAI by default and any OpenAI-compatible base URL when set", () => {
+  expect(modelBaseUrl({})).toBe("https://api.openai.com/v1");
+  expect(
+    modelBaseUrl({ OPENAI_BASE_URL: "https://openrouter.ai/api/v1" }),
+  ).toBe("https://openrouter.ai/api/v1");
 });

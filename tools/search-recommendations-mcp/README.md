@@ -42,12 +42,14 @@ python smoke.py        # every tool against the running API
 mcp dev server.py      # MCP Inspector in the browser
 ```
 
-Run the agent with your Academic Cloud Chat AI key:
+Run the agent with a key for any OpenAI-compatible provider:
 
 ```sh
 # macOS/Linux: export VAR=value    Windows PowerShell: $env:VAR="value"
-export CHAT_AI_API_KEY="your-key"          # never commit it
-export CHAT_AI_MODEL="a-model-with-tool-calling"
+export OPENAI_API_KEY="your-key"           # never commit it
+export OPENAI_MODEL="gpt-4.1-mini"         # any model with tool calling
+# Optional, for providers other than OpenAI, e.g. OpenRouter:
+# export OPENAI_BASE_URL="https://openrouter.ai/api/v1"
 python agent.py "Find in-stock wireless products under €25."
 ```
 
