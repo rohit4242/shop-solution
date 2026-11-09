@@ -1,24 +1,49 @@
-// Writes docs/search-recommendations/openapi.yaml from the Zod schemas.
-// `--check` fails instead of writing when the committed file is out of date.
-import { readFileSync, writeFileSync } from "node:fs";
+// Writes the Search & Recommendations contract files from the Zod schemas:
+//   docs/search-recommendations/openapi.yaml
+//   .claude/skills/shop-search/SKILL.md and .agents/skills/shop-search/SKILL.md
+// `--check` fails instead of writing when a committed file is out of date.
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { stringify, parse } from "yaml";
 import { format } from "prettier";
 import { createOpenApiDocument } from "../src/features/search-recommendations/docs/openapi";
+import {
+  agentSkill,
+  skillPaths,
+} from "../src/features/search-recommendations/docs/agent-kit";
 
-const destination = "docs/search-recommendations/openapi.yaml";
+const openApiPath = "docs/search-recommendations/openapi.yaml";
 const document = createOpenApiDocument();
+// The committed skill has no fixed URL: it tells the agent to use localhost or the team's deployment.
+const skill = await format(agentSkill(null), { parser: "markdown" });
+const read = (path: string) => {
+  try {
+    return readFileSync(path, "utf8").replace(/\r\n/g, "\n");
+  } catch {
+    return null;
+  }
+};
 
 if (process.argv.includes("--check")) {
-  const committed = parse(readFileSync(destination, "utf8"));
-  if (JSON.stringify(committed) !== JSON.stringify(document))
+  const stale = [
+    JSON.stringify(parse(read(openApiPath) ?? "")) !== JSON.stringify(document)
+      ? openApiPath
+      : null,
+    ...skillPaths.map((path) => (read(path) !== skill ? path : null)),
+  ].filter(Boolean);
+  if (stale.length)
     throw new Error(
-      `${destination} is out of date. Run pnpm contract:export and commit the result.`,
+      `Out of date: ${stale.join(", ")}. Run pnpm contract:export and commit the result.`,
     );
-  console.log(`${destination} matches the schemas.`);
+  console.log("openapi.yaml and both shop-search skills match the schemas.");
 } else {
   writeFileSync(
-    destination,
+    openApiPath,
     await format(stringify(document), { parser: "yaml" }),
   );
-  console.log(`Wrote ${destination}.`);
+  for (const path of skillPaths) {
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, skill);
+  }
+  console.log(`Wrote ${openApiPath} and ${skillPaths.join(", ")}.`);
 }

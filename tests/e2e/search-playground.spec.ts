@@ -5,7 +5,6 @@ test("streams inspected results, saves history and changes settings without repl
   await page.route("**/api/search-playground/config", (route) =>
     route.fulfill({
       json: {
-        userId: "test-user",
         enabled: true,
         profiles: [
           {
@@ -77,20 +76,50 @@ test("streams inspected results, saves history and changes settings without repl
     "Search for wireless",
   );
 });
-test("shows sign-in gate and no configuration for unauthenticated visitors", async ({
+test("locked visitors see only the access-code gate; the right code unlocks it", async ({
   page,
 }) => {
+  let unlocked = false;
+  let sentCode = "";
   await page.route("**/api/search-playground/config", (route) =>
-    route.fulfill({
-      status: 401,
-      json: { error: { message: "Sign in to continue." } },
-    }),
+    unlocked
+      ? route.fulfill({ json: { enabled: false, profiles: [] } })
+      : route.fulfill({
+          status: 401,
+          json: {
+            error: { message: "Enter the team access code to continue." },
+          },
+        }),
   );
+  await page.route("**/api/search-playground/unlock", (route) => {
+    sentCode = JSON.parse(route.request().postData() ?? "{}").code;
+    unlocked = sentCode === "team-code";
+    return unlocked
+      ? route.fulfill({ json: { unlocked: true } })
+      : route.fulfill({
+          status: 401,
+          json: { error: { message: "That access code is not correct." } },
+        });
+  });
   await page.goto("/docs/search-recommendations/playground");
-  await expect(page.getByLabel("Email")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Run", exact: true }),
   ).toHaveCount(0);
+  // Wait until the page has hydrated and the access check has answered.
+  await expect(page.getByRole("status")).toHaveText(
+    "Enter the team access code to continue.",
+  );
+  await page.getByLabel("Team access code").fill("wrong");
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "That access code is not correct." }),
+  ).toBeVisible();
+  await page.getByLabel("Team access code").fill("team-code");
+  await page.getByRole("button", { name: "Unlock" }).click();
+  await expect(page.getByRole("button", { name: "Lock" })).toBeVisible();
+  expect(sentCode).toBe("team-code");
 });
 test("workspace remains usable at desktop and mobile widths", async ({
   page,
@@ -98,7 +127,6 @@ test("workspace remains usable at desktop and mobile widths", async ({
   await page.route("**/api/search-playground/config", (route) =>
     route.fulfill({
       json: {
-        userId: "visual-user",
         enabled: false,
         profiles: [
           {
@@ -134,37 +162,44 @@ test("workspace remains usable at desktop and mobile widths", async ({
     fullPage: true,
   });
 });
-test("account changes clear drafts and saved-run selections", async ({
+test("locking clears the draft and returns to the access-code gate", async ({
   page,
 }) => {
-  let user = "alice";
+  let unlocked = true;
   await page.route("**/api/search-playground/config", (route) =>
-    route.fulfill({
-      json: {
-        userId: user,
-        enabled: true,
-        profiles: [
-          {
-            id: "test",
-            label: "Test model",
-            model: "test",
-            maxOutputTokens: 2048,
-            temperature: true,
-            topP: false,
-            toolChoice: true,
+    unlocked
+      ? route.fulfill({
+          json: {
+            enabled: true,
+            profiles: [
+              {
+                id: "test",
+                label: "Test model",
+                model: "test",
+                maxOutputTokens: 2048,
+                temperature: true,
+                topP: false,
+                toolChoice: true,
+              },
+            ],
           },
-        ],
-      },
-    }),
+        })
+      : route.fulfill({
+          status: 401,
+          json: {
+            error: { message: "Enter the team access code to continue." },
+          },
+        }),
   );
-  await page.route("**/api/auth/sign-out", (route) =>
-    route.fulfill({ json: { success: true } }),
-  );
+  await page.route("**/api/search-playground/unlock", (route) => {
+    unlocked = false;
+    return route.fulfill({ json: { unlocked: false } });
+  });
   await page.goto("/docs/search-recommendations/playground");
-  await page.getByLabel("Prompt", { exact: true }).fill("Alice private draft");
-  user = "bob";
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page.getByLabel("Prompt", { exact: true })).toHaveValue("");
+  await page.getByLabel("Prompt", { exact: true }).fill("Private draft");
+  await page.getByRole("button", { name: "Lock", exact: true }).click();
+  await expect(page.getByLabel("Team access code")).toBeVisible();
+  await expect(page.getByLabel("Prompt", { exact: true })).toHaveCount(0);
 });
 test("fork preserves the original multi-turn input after settings change", async ({
   page,
@@ -172,7 +207,6 @@ test("fork preserves the original multi-turn input after settings change", async
   await page.route("**/api/search-playground/config", (route) =>
     route.fulfill({
       json: {
-        userId: "fork-user",
         enabled: true,
         profiles: [
           {

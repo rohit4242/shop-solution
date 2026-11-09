@@ -48,11 +48,17 @@ export function mcpUrl(env: Env = process.env): string {
   return `${apiOrigin(env)}${mcpPath}`;
 }
 
-/** The MCP endpoint for documentation, or null when the address is unknown (never throws). */
-export function displayMcpUrl(env: Env = process.env): string | null {
+/** The API origin for documentation, or null when the address is unknown (never throws). */
+export function displayOrigin(env: Env = process.env): string | null {
   try {
-    return mcpUrl(env);
+    return apiOrigin(env);
   } catch {
     return null;
   }
+}
+
+/** The MCP endpoint for documentation, or null when the address is unknown (never throws). */
+export function displayMcpUrl(env: Env = process.env): string | null {
+  const origin = displayOrigin(env);
+  return origin ? `${origin}${mcpPath}` : null;
 }

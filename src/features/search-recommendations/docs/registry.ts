@@ -10,6 +10,11 @@ import {
 } from "../schemas/contracts";
 export const docsBase = "/docs/search-recommendations";
 export const docPages = [
+  {
+    slug: "use-with-ai",
+    title: "Use with your AI agent",
+    group: "MCP & playground",
+  },
   { slug: "mcp", title: "MCP overview", group: "MCP & playground" },
   { slug: "connect", title: "Connect your client", group: "MCP & playground" },
   {
