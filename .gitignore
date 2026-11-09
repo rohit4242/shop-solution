@@ -17,3 +17,6 @@ __pycache__/
 
 # Local pnpm cache
 .pnpm-store/
+
+# Generated exports (PDFs, screenshots)
+output/

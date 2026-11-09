@@ -4,4 +4,4 @@ src/generated
 package-lock.json
 pnpm-lock.yaml
 # Frozen prior-exercise evidence must not be reformatted.
-docs/search-recommendations/submission/evidence/
+docs/search-recommendations/exercises/session-4-context-package/evidence/

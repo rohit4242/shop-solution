@@ -4,7 +4,7 @@ import { format } from "prettier";
 import { z } from "zod";
 import { createOpenApiDocument } from "../src/features/search-recommendations/docs/openapi";
 import { toolDefinitions } from "../src/features/search-recommendations/server/mcp/tools";
-const destination = "docs/search-recommendations/session-5-mcp/openapi.yaml";
+const destination = "docs/search-recommendations/openapi.yaml";
 const toolsPath = "tools/search-recommendations-mcp/tool-contract.json";
 const document = createOpenApiDocument();
 const tools = Object.fromEntries(
