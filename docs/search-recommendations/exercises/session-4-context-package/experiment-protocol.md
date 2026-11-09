@@ -1,6 +1,6 @@
 # A/B experiment protocol
 
-Status: provisional runs completed on 25 October 2026 with user authorisation to proceed before partner replies. The real interface review remains incomplete. Frozen context, transcripts and results are in submission/evidence; see submission/EXPERIMENT-REPORT.md. The original review-first protocol below is retained for reference.
+Status: provisional runs completed on 25 October 2026 with user authorisation to proceed before partner replies. The real interface review remains incomplete. Frozen context, transcripts and results are in evidence/; see EXPERIMENT-REPORT.md. The original review-first protocol below is retained for reference.
 
 ## Isolation and controls
 

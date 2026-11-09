@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { createOpenApiDocument } from "../../docs/openapi";
 import { endpointDefinitions } from "../../docs/registry";
+import { apiOrigin, normalizeOrigin } from "../origin";
 
 // Derived from the public contract's parsed input shape: numbers here, decimal strings over HTTP.
 const spec = createOpenApiDocument();
@@ -67,25 +68,6 @@ export const toolDefinitions = Object.fromEntries(
   toolNames.map((name) => [name, definition(name)]),
 ) as Record<ToolName, ReturnType<typeof definition>>;
 
-export function configuredOrigin(value = process.env.SEARCH_API_BASE_URL) {
-  const candidate =
-    value ||
-    (process.env.NODE_ENV === "production" ? "" : "http://127.0.0.1:3000");
-  const url = new URL(candidate);
-  if (
-    !["http:", "https:"].includes(url.protocol) ||
-    url.username ||
-    url.password ||
-    url.search ||
-    url.hash ||
-    url.pathname !== "/"
-  )
-    throw new Error(
-      "Configure an HTTP(S) origin without credentials, path, query or fragment.",
-    );
-  return url.origin;
-}
-
 export async function callDiscoveryTool(
   name: ToolName,
   input: unknown,
@@ -97,7 +79,8 @@ export async function callDiscoveryTool(
 ) {
   const definition = toolDefinitions[name];
   const args = definition.schema.parse(input);
-  const url = new URL(definition.path, configuredOrigin(options.origin));
+  const origin = options.origin ? normalizeOrigin(options.origin) : apiOrigin();
+  const url = new URL(definition.path, origin);
   for (const [key, value] of Object.entries(args))
     if (value !== undefined) url.searchParams.set(key, String(value));
   const request = {
@@ -116,12 +99,6 @@ export async function callDiscoveryTool(
       signal,
       redirect: "manual",
       cache: "no-store",
-      headers: process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-        ? {
-            "x-vercel-protection-bypass":
-              process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
-          }
-        : undefined,
     });
     const status = response.status,
       requestId = response.headers.get("x-request-id");

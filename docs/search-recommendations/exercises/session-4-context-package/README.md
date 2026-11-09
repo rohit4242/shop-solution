@@ -11,7 +11,7 @@ Updated 26 October 2026. Read [FULL-EXERCISE.md](FULL-EXERCISE.md) for one compl
 - [Part 4 table](TASK-CLASSIFICATION.md).
 - [Speaking notes](PRESENTATION-NOTES.md): five-minute timing.
 
-PDF exports are under output/pdf at the project root. search-exercise-complete.pdf combines the written package; search-context-presentation.pdf contains five slides. Individual exports preserve the module/report page limits.
+The submitted PDF exports were removed from the repository; they remain in git history (commit `0ff1496`, folder `output/pdf/`).
 
 ## What is and is not complete
 

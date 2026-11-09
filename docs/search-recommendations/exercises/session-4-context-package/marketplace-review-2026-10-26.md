@@ -1,6 +1,6 @@
 # Marketplace interface review — 26 October 2026
 
-**Later clarification:** Admin supplied a conflicting article proposal and a joint review is now open. The statements below remain Marketplace's position, not a final shared ownership decision. See [the consolidated review](submission/INTERFACE-REVIEW.md).
+**Later clarification:** Admin supplied a conflicting article proposal and a joint review is now open. The statements below remain Marketplace's position, not a final shared ownership decision. See [the consolidated review](INTERFACE-REVIEW.md).
 
 Evidence: Marketplace reply pasted by Rohit in this chat on 26 October. This is a real partner response, not a simulated review. Their draft API spec is still forthcoming. No evidence yet that both teams have revised their MODULE.md files.
 

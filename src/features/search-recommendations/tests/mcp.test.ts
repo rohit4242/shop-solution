@@ -5,6 +5,7 @@ import {
   mockPurchaseSource,
 } from "../server/repositories/mock-sources";
 import { toolDefinitions, callDiscoveryTool } from "../server/mcp/tools";
+import { apiOrigin, displayMcpUrl, mcpUrl } from "../server/origin";
 
 describe("discovery request evidence", () => {
   it("correlates success and invalid-input responses with exactly one sanitized log each", async () => {
@@ -93,22 +94,44 @@ describe("MCP translation", () => {
     expect(result.content[0].text).not.toContain("secret URL");
   });
 });
-it("forwards preview bypass only upstream, never into tool output", async () => {
-  vi.stubEnv("VERCEL_AUTOMATION_BYPASS_SECRET", "preview-secret");
-  try {
-    const fetcher = vi
-      .fn()
-      .mockResolvedValue(Response.json({ data: { items: [] } }));
-    const result = await callDiscoveryTool(
-      "search",
-      {},
-      { origin: "http://localhost:3000", fetcher },
+describe("API origin", () => {
+  it("prefers SEARCH_API_BASE_URL, then Vercel, then localhost in development", () => {
+    expect(
+      apiOrigin({
+        SEARCH_API_BASE_URL: "https://shop.example/",
+        VERCEL_URL: "x.vercel.app",
+      }),
+    ).toBe("https://shop.example");
+    expect(
+      apiOrigin({
+        NODE_ENV: "production",
+        VERCEL_ENV: "production",
+        VERCEL_PROJECT_PRODUCTION_URL: "shop.vercel.app",
+        VERCEL_URL: "shop-abc123.vercel.app",
+      }),
+    ).toBe("https://shop.vercel.app");
+    expect(
+      apiOrigin({
+        NODE_ENV: "production",
+        VERCEL_ENV: "preview",
+        VERCEL_URL: "shop-abc123.vercel.app",
+      }),
+    ).toBe("https://shop-abc123.vercel.app");
+    expect(apiOrigin({ NODE_ENV: "development" })).toBe(
+      "http://127.0.0.1:3000",
     );
-    expect(fetcher.mock.calls[0][1].headers["x-vercel-protection-bypass"]).toBe(
-      "preview-secret",
+    expect(mcpUrl({ SEARCH_API_BASE_URL: "https://shop.example" })).toBe(
+      "https://shop.example/api/mcp/search-recommendations",
     );
-    expect(JSON.stringify(result)).not.toContain("preview-secret");
-  } finally {
-    vi.unstubAllEnvs();
-  }
+  });
+  it("refuses to guess in production and rejects origins with a path or credentials", () => {
+    expect(() => apiOrigin({ NODE_ENV: "production" })).toThrow();
+    expect(displayMcpUrl({ NODE_ENV: "production" })).toBeNull();
+    expect(() =>
+      apiOrigin({ SEARCH_API_BASE_URL: "https://shop.example/api" }),
+    ).toThrow();
+    expect(() =>
+      apiOrigin({ SEARCH_API_BASE_URL: "https://user:pw@shop.example" }),
+    ).toThrow();
+  });
 });
