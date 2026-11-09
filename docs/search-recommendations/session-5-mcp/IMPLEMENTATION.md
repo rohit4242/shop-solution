@@ -38,6 +38,7 @@ Plan: Search & Recommendations: Live MCP, Team Playground and Exercise Submissio
 - No minor findings were reported.
 
 ## Handoff
+
 - All local implementation work is in the workspace on codex/search-mcp-playground; no commits, pushes or releases made.
 - Final tests: 57 Vitest tests, 4 Python tests, 5 browser checks. Lint, types, formatting and contract parity pass.
 - Added explicit comparison highlighting for configuration, messages, tool sequence/arguments, final answer, outcome, measured duration and reported usage; regression test passes.
