@@ -1,0 +1,13 @@
+Implemented `searchProducts(catalog, filters)` returning `{ products, total }`.
+
+Files added:
+- [searchProducts.ts](/tmp/shop-search-exercise-20261025/run-a/searchProducts.ts): filtering, validation, deterministic sorting, and fresh summaries without modifying inputs.
+- [searchProducts.test.ts](/tmp/shop-search-exercise-20261025/run-a/searchProducts.test.ts): 14 tests covering requested behavior.
+
+Checks:
+- `./node_modules/.bin/vitest run` — 14 passed.
+- `./node_modules/.bin/tsc --noEmit` — passed.
+
+Assumptions: category matching and lexical ordering are case-sensitive; prices use minor units; summaries exclude tags and publication status.
+
+Limitation: catalog records are assumed to conform to the supplied fixture shape; runtime validation covers price bounds.

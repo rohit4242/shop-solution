@@ -1,0 +1,32 @@
+{
+  "run-a": {
+    "usage": {
+      "input_tokens": 110042,
+      "cached_input_tokens": 99968,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2520,
+      "reasoning_output_tokens": 21
+    },
+    "messages": 3,
+    "commands": 5,
+    "file_change_batches": 1,
+    "human_corrections": 0,
+    "independent_passed": 18,
+    "independent_total": 18
+  },
+  "run-b": {
+    "usage": {
+      "input_tokens": 84425,
+      "cached_input_tokens": 70656,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2652,
+      "reasoning_output_tokens": 67
+    },
+    "messages": 3,
+    "commands": 5,
+    "file_change_batches": 1,
+    "human_corrections": 0,
+    "independent_passed": 18,
+    "independent_total": 18
+  }
+}

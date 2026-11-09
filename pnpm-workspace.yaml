@@ -5,3 +5,6 @@ allowBuilds:
   unrs-resolver: true
   sharp: true
   pnpm: false
+minimumReleaseAgeExclude:
+  - "@ai-sdk/gateway@4.0.139"
+  - ai@7.0.166

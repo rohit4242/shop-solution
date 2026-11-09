@@ -1,0 +1,1177 @@
+openapi: 3.1.0
+info:
+  title: Search & Recommendations
+  version: 1.0.0
+  description: Mock-backed developer API. Marketplace wire contract and purchase
+    source are not finalized. Unknown or repeated query parameters are rejected.
+    Integer query parameters use decimal digits only; prices are pre-discount
+    EUR minor units.
+servers:
+  - url: /
+    description: Current application origin
+paths:
+  /api/v1/search:
+    get:
+      operationId: search
+      summary: Search
+      description:
+        Find public products using text, filters, sorting, and pagination.
+        Every query term must match. Visibility and filters apply before sorting
+        and pagination. Active out-of-stock products are included by default.
+      tags:
+        - Search
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description:
+            "Trimmed; at most 200 characters and 20 terms. Empty allows
+            browsing. Default: empty."
+          schema:
+            default: ""
+            type: string
+            maxLength: 200
+        - name: category
+          in: query
+          required: false
+          description: Exact category name, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: sellerId
+          in: query
+          required: false
+          description: Exact seller identifier, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: availability
+          in: query
+          required: false
+          description: in_stock or out_of_stock. Omit to include both.
+          schema:
+            type: string
+            enum:
+              - in_stock
+              - out_of_stock
+        - name: minPriceMinor
+          in: query
+          required: false
+          description: Inclusive minimum, nonnegative safe integer in euro cents.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+        - name: maxPriceMinor
+          in: query
+          required: false
+          description: Inclusive maximum; must be at least minPriceMinor.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+        - name: sort
+          in: query
+          required: false
+          description: "relevance, price_asc, price_desc, or name_asc. Default: relevance."
+          schema:
+            default: relevance
+            type: string
+            enum:
+              - relevance
+              - price_asc
+              - price_desc
+              - name_asc
+        - name: page
+          in: query
+          required: false
+          description:
+            "Positive safe integer. Pages beyond the end return empty items.
+            Default: 1."
+          schema:
+            default: 1
+            type: integer
+            minimum: 1
+            maximum: 9007199254740991
+        - name: pageSize
+          in: query
+          required: false
+          description: "1–100 items per page. Default: 20."
+          schema:
+            default: 20
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        "200":
+          description: Success (including empty results)
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            offerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            productId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            sellerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            name:
+                              type: string
+                              minLength: 1
+                            category:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            imageUrls:
+                              type: array
+                              items:
+                                type: string
+                                format: uri
+                            priceMinor:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            currency:
+                              type: string
+                              const: EUR
+                            availability:
+                              type: string
+                              enum:
+                                - in_stock
+                                - out_of_stock
+                          required:
+                            - offerId
+                            - productId
+                            - sellerId
+                            - name
+                            - category
+                            - imageUrls
+                            - priceMinor
+                            - currency
+                            - availability
+                          additionalProperties: false
+                      total:
+                        type: integer
+                        minimum: 0
+                        maximum: 9007199254740991
+                      page:
+                        type: integer
+                        exclusiveMinimum: 0
+                        maximum: 9007199254740991
+                      pageSize:
+                        type: integer
+                        minimum: 1
+                        maximum: 100
+                    required:
+                      - items
+                      - total
+                      - page
+                      - pageSize
+                    additionalProperties: false
+                required:
+                  - data
+                additionalProperties: false
+              examples:
+                success:
+                  value:
+                    data:
+                      items:
+                        - offerId: off_1
+                          productId: prd_1
+                          sellerId: sel_2
+                          name: Wireless Mouse
+                          category: Electronics
+                          imageUrls: &a1 []
+                          priceMinor: 1999
+                          currency: EUR
+                          availability: in_stock
+                      total: 1
+                      page: 1
+                      pageSize: 20
+                empty:
+                  value:
+                    data:
+                      items: []
+                      total: 0
+                      page: 1
+                      pageSize: 20
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "503":
+          description: Dependency unavailable
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /api/v1/search/facets:
+    get:
+      operationId: facets
+      summary: Facets
+      description:
+        Get filter values, counts, and the available price range. Each
+        facet ignores its own filter and respects the others. The price range
+        ignores both price bounds. Counts represent products, not purchases.
+      tags:
+        - Search
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description:
+            "Trimmed; at most 200 characters and 20 terms. Empty allows
+            browsing. Default: empty."
+          schema:
+            default: ""
+            type: string
+            maxLength: 200
+        - name: category
+          in: query
+          required: false
+          description: Exact category name, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: sellerId
+          in: query
+          required: false
+          description: Exact seller identifier, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: availability
+          in: query
+          required: false
+          description: in_stock or out_of_stock. Omit to include both.
+          schema:
+            type: string
+            enum:
+              - in_stock
+              - out_of_stock
+        - name: minPriceMinor
+          in: query
+          required: false
+          description: Inclusive minimum, nonnegative safe integer in euro cents.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+        - name: maxPriceMinor
+          in: query
+          required: false
+          description: Inclusive maximum; must be at least minPriceMinor.
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9007199254740991
+      responses:
+        "200":
+          description: Success (including empty results)
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            category:
+                              type: string
+                            count:
+                              type: integer
+                              exclusiveMinimum: 0
+                              maximum: 9007199254740991
+                          required:
+                            - category
+                            - count
+                          additionalProperties: false
+                      sellers:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            sellerId:
+                              type: string
+                            count:
+                              type: integer
+                              exclusiveMinimum: 0
+                              maximum: 9007199254740991
+                          required:
+                            - sellerId
+                            - count
+                          additionalProperties: false
+                      availability:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            availability:
+                              type: string
+                              enum:
+                                - in_stock
+                                - out_of_stock
+                            count:
+                              type: integer
+                              exclusiveMinimum: 0
+                              maximum: 9007199254740991
+                          required:
+                            - availability
+                            - count
+                          additionalProperties: false
+                      priceRange:
+                        anyOf:
+                          - type: object
+                            properties:
+                              minPriceMinor:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                              maxPriceMinor:
+                                type: integer
+                                minimum: 0
+                                maximum: 9007199254740991
+                            required:
+                              - minPriceMinor
+                              - maxPriceMinor
+                            additionalProperties: false
+                          - type: "null"
+                    required:
+                      - categories
+                      - sellers
+                      - availability
+                      - priceRange
+                    additionalProperties: false
+                required:
+                  - data
+                additionalProperties: false
+              examples:
+                success:
+                  value:
+                    data:
+                      categories:
+                        - category: Electronics
+                          count: 1
+                      sellers:
+                        - sellerId: sel_2
+                          count: 1
+                      availability:
+                        - availability: in_stock
+                          count: 1
+                      priceRange:
+                        minPriceMinor: 1999
+                        maxPriceMinor: 1999
+                empty:
+                  value:
+                    data:
+                      categories: []
+                      sellers: []
+                      availability: []
+                      priceRange: null
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "503":
+          description: Dependency unavailable
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /api/v1/search/autocomplete:
+    get:
+      operationId: autocomplete
+      summary: Autocomplete
+      description:
+        Suggest visible product names as customers type. Matches the start
+        of the full normalized name. Results are alphabetical with product ID as
+        a tie-breaker; query history is not stored.
+      tags:
+        - Search
+      security: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description:
+            At least 2 characters; at most 200 characters and 20 terms.
+            Normalized name prefix.
+          schema:
+            type: string
+            maxLength: 200
+        - name: category
+          in: query
+          required: false
+          description: Exact category name, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: availability
+          in: query
+          required: false
+          description: in_stock or out_of_stock. Omit to include both.
+          schema:
+            type: string
+            enum:
+              - in_stock
+              - out_of_stock
+        - name: limit
+          in: query
+          required: false
+          description: "1–10 suggestions. Default: 5."
+          schema:
+            default: 5
+            type: integer
+            minimum: 1
+            maximum: 10
+      responses:
+        "200":
+          description: Success (including empty results)
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      suggestions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            productId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            name:
+                              type: string
+                          required:
+                            - productId
+                            - name
+                          additionalProperties: false
+                    required:
+                      - suggestions
+                    additionalProperties: false
+                required:
+                  - data
+                additionalProperties: false
+              examples:
+                success:
+                  value:
+                    data:
+                      suggestions:
+                        - productId: prd_1
+                          name: Wireless Mouse
+                empty:
+                  value:
+                    data:
+                      suggestions: []
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "503":
+          description: Dependency unavailable
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /api/v1/recommendations/similar:
+    get:
+      operationId: similar
+      summary: Similar products
+      description:
+        Find alternatives in the source product's category. Same category
+        only. Rank by shared attribute pairs, then absolute price difference,
+        then product ID. Exclude the source. Missing or hidden sources return
+        404.
+      tags:
+        - Recommendations
+      security: []
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          description: Active source product identifier, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: availability
+          in: query
+          required: false
+          description: in_stock or out_of_stock. Omit to include both.
+          schema:
+            type: string
+            enum:
+              - in_stock
+              - out_of_stock
+        - name: limit
+          in: query
+          required: false
+          description: "1–20 items. Default: 5."
+          schema:
+            default: 5
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: Success (including empty results)
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            offerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            productId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            sellerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            name:
+                              type: string
+                              minLength: 1
+                            category:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            imageUrls:
+                              type: array
+                              items:
+                                type: string
+                                format: uri
+                            priceMinor:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            currency:
+                              type: string
+                              const: EUR
+                            availability:
+                              type: string
+                              enum:
+                                - in_stock
+                                - out_of_stock
+                          required:
+                            - offerId
+                            - productId
+                            - sellerId
+                            - name
+                            - category
+                            - imageUrls
+                            - priceMinor
+                            - currency
+                            - availability
+                          additionalProperties: false
+                    required:
+                      - items
+                    additionalProperties: false
+                required:
+                  - data
+                additionalProperties: false
+              examples:
+                success:
+                  value:
+                    data:
+                      items:
+                        - offerId: off_5
+                          productId: prd_5
+                          sellerId: sel_3
+                          name: Desk Speaker
+                          category: Electronics
+                          imageUrls: *a1
+                          priceMinor: 2999
+                          currency: EUR
+                          availability: in_stock
+                empty:
+                  value:
+                    data:
+                      items: []
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "503":
+          description: Dependency unavailable
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+  /api/v1/recommendations/also-bought:
+    get:
+      operationId: also_bought
+      summary: Also bought
+      description: Recommend products that occur together in synthetic purchase
+        groups. Count each pair once per purchase, then sort by count descending
+        and product ID. No history means no results. Similarity and popularity
+        are never substituted. Purchase data is synthetic.
+      tags:
+        - Recommendations
+      security: []
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          description: Active source product identifier, 1–128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+        - name: availability
+          in: query
+          required: false
+          description: in_stock or out_of_stock. Omit to include both.
+          schema:
+            type: string
+            enum:
+              - in_stock
+              - out_of_stock
+        - name: limit
+          in: query
+          required: false
+          description: "1–20 items. Default: 5."
+          schema:
+            default: 5
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: Success (including empty results)
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            offerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            productId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            sellerId:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            name:
+                              type: string
+                              minLength: 1
+                            category:
+                              type: string
+                              minLength: 1
+                              maxLength: 128
+                            imageUrls:
+                              type: array
+                              items:
+                                type: string
+                                format: uri
+                            priceMinor:
+                              type: integer
+                              minimum: 0
+                              maximum: 9007199254740991
+                            currency:
+                              type: string
+                              const: EUR
+                            availability:
+                              type: string
+                              enum:
+                                - in_stock
+                                - out_of_stock
+                          required:
+                            - offerId
+                            - productId
+                            - sellerId
+                            - name
+                            - category
+                            - imageUrls
+                            - priceMinor
+                            - currency
+                            - availability
+                          additionalProperties: false
+                    required:
+                      - items
+                    additionalProperties: false
+                required:
+                  - data
+                additionalProperties: false
+              examples:
+                success:
+                  value:
+                    data:
+                      items:
+                        - offerId: off_2
+                          productId: prd_2
+                          sellerId: sel_3
+                          name: Quiet Mouse
+                          category: Electronics
+                          imageUrls: *a1
+                          priceMinor: 2999
+                          currency: EUR
+                          availability: out_of_stock
+                empty:
+                  value:
+                    data:
+                      items: []
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "404":
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "500":
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+        "503":
+          description: Dependency unavailable
+          content:
+            application/json:
+              schema:
+                $schema: https://json-schema.org/draft/2020-12/schema
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                    required:
+                      - code
+                      - message
+                    additionalProperties: false
+                required:
+                  - error
+                additionalProperties: false
+components:
+  schemas:
+    DiscoveryItem:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        offerId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        productId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        sellerId:
+          type: string
+          minLength: 1
+          maxLength: 128
+        name:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          minLength: 1
+          maxLength: 128
+        imageUrls:
+          type: array
+          items:
+            type: string
+            format: uri
+        priceMinor:
+          type: integer
+          minimum: 0
+          maximum: 9007199254740991
+        currency:
+          type: string
+          const: EUR
+        availability:
+          type: string
+          enum:
+            - in_stock
+            - out_of_stock
+      required:
+        - offerId
+        - productId
+        - sellerId
+        - name
+        - category
+        - imageUrls
+        - priceMinor
+        - currency
+        - availability
+      additionalProperties: false
+    Error:
+      $schema: https://json-schema.org/draft/2020-12/schema
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+          required:
+            - code
+            - message
+          additionalProperties: false
+      required:
+        - error
+      additionalProperties: false

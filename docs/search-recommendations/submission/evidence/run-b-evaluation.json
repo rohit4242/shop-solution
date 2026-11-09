@@ -1,0 +1,82 @@
+{
+  "adapter": {
+    "queryKey": "q",
+    "resultKey": "items"
+  },
+  "passed": 18,
+  "total": 18,
+  "results": [
+    {
+      "name": "empty query and deterministic ordering",
+      "pass": true
+    },
+    {
+      "name": "whitespace query",
+      "pass": true
+    },
+    {
+      "name": "case-insensitive trimmed substring",
+      "pass": true
+    },
+    {
+      "name": "unmatched query",
+      "pass": true
+    },
+    {
+      "name": "category exact match",
+      "pass": true
+    },
+    {
+      "name": "category is not a fuzzy label",
+      "pass": true
+    },
+    {
+      "name": "AND combination and inclusive boundaries",
+      "pass": true
+    },
+    {
+      "name": "zero-price exact bound",
+      "pass": true
+    },
+    {
+      "name": "minimum-only inclusive bound",
+      "pass": true
+    },
+    {
+      "name": "maximum-only inclusive bound",
+      "pass": true
+    },
+    {
+      "name": "unpublished exclusion",
+      "pass": true
+    },
+    {
+      "name": "negative minimum rejected",
+      "pass": true
+    },
+    {
+      "name": "fractional maximum rejected",
+      "pass": true
+    },
+    {
+      "name": "reversed bounds rejected",
+      "pass": true
+    },
+    {
+      "name": "nonfinite bounds rejected",
+      "pass": true
+    },
+    {
+      "name": "five-field summary without source metadata",
+      "pass": true
+    },
+    {
+      "name": "input immutability including result edits",
+      "pass": true
+    },
+    {
+      "name": "empty catalog",
+      "pass": true
+    }
+  ]
+}
