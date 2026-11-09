@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { displayMcpUrl, mcpPath } from "../server/origin";
+import { UseWithAiContent } from "./use-with-ai-content";
 const code =
   "overflow-auto rounded-lg border bg-muted/40 p-4 text-xs leading-6 whitespace-pre-wrap";
 export const mcpDocSlugs = [
+  "use-with-ai",
   "mcp",
   "connect",
   "playground-guide",
@@ -11,6 +13,7 @@ export const mcpDocSlugs = [
 ];
 export function McpDocsContent({ slug }: { slug: string }) {
   const endpoint = displayMcpUrl() ?? `https://<this-site>${mcpPath}`;
+  if (slug === "use-with-ai") return <UseWithAiContent />;
   if (slug === "mcp")
     return (
       <div className="space-y-6">
