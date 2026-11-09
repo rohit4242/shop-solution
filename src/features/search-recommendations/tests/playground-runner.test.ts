@@ -53,10 +53,7 @@ const usage = {
 };
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv(
-    "SEARCH_MCP_URL",
-    "http://localhost:3000/api/mcp/search-recommendations",
-  );
+  vi.stubEnv("SEARCH_API_BASE_URL", "http://localhost:3000");
   vi.stubEnv("CHAT_AI_API_KEY", "test-secret");
 });
 it("uses the real SDK loop, emits tool results, and closes the MCP client", async () => {

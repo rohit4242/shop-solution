@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { displayMcpUrl, mcpPath } from "../server/origin";
 const code =
   "overflow-auto rounded-lg border bg-muted/40 p-4 text-xs leading-6 whitespace-pre-wrap";
 export const mcpDocSlugs = [
@@ -9,7 +10,7 @@ export const mcpDocSlugs = [
   "mcp-troubleshooting",
 ];
 export function McpDocsContent({ slug }: { slug: string }) {
-  const endpoint = process.env.SEARCH_PUBLIC_MCP_URL;
+  const endpoint = displayMcpUrl() ?? `https://<this-site>${mcpPath}`;
   if (slug === "mcp")
     return (
       <div className="space-y-6">
@@ -66,14 +67,8 @@ export function McpDocsContent({ slug }: { slug: string }) {
   if (slug === "connect")
     return (
       <div className="space-y-6">
-        <p>
-          {endpoint
-            ? "Configured public endpoint:"
-            : "No verified production endpoint has been published yet. Use the local endpoint while developing."}
-        </p>
-        <pre className={code}>
-          {endpoint ?? "http://127.0.0.1:3000/api/mcp/search-recommendations"}
-        </pre>
+        <p>MCP endpoint of this deployment:</p>
+        <pre className={code}>{endpoint}</pre>
         <ol className="list-decimal space-y-3 pl-5">
           <li>
             Open your client’s MCP connection settings and select remote HTTP /
@@ -97,9 +92,7 @@ export function McpDocsContent({ slug }: { slug: string }) {
         <pre className={code}>
           {JSON.stringify(
             {
-              url:
-                endpoint ??
-                "http://127.0.0.1:3000/api/mcp/search-recommendations",
+              url: endpoint,
               transport: "streamable-http",
             },
             null,
@@ -169,26 +162,26 @@ export function McpDocsContent({ slug }: { slug: string }) {
     return (
       <div className="space-y-6">
         <p>
-          Start the API and use the isolated Python environment for the course
-          adapter. Python 3.11+ is required.
+          The Python MCP server in <code>tools/search-recommendations-mcp</code>{" "}
+          runs over stdio, like the lecture&apos;s stage 4 example. It needs
+          Python 3.11+ and the API running.
         </p>
-        <pre className={code}>{`pnpm install --frozen-lockfile
-pnpm contract:check
+        <pre className={code}>{`# Terminal 1: the API
+pnpm install --frozen-lockfile
 pnpm dev
 
-# Another terminal
-python3 -m venv tools/search-recommendations-mcp/.venv
-tools/search-recommendations-mcp/.venv/bin/pip install -r tools/search-recommendations-mcp/requirements.lock
-tools/search-recommendations-mcp/.venv/bin/python tools/search-recommendations-mcp/smoke.py
-
-# Inspector: run from the Python package directory
+# Terminal 2: the MCP server
 cd tools/search-recommendations-mcp
-.venv/bin/mcp dev server.py`}</pre>
+python -m venv .venv
+# Windows: .venv\\Scripts\\activate    macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python smoke.py        # call every tool once
+mcp dev server.py      # MCP Inspector
+python agent.py "Find in-stock wireless products under €25."`}</pre>
         <p>
-          The equivalent course runner is <code>agent.py</code>; it is not the
-          original lecture stage-4 file. Configure CHAT_AI_API_KEY,
-          CHAT_AI_BASE_URL and CHAT_AI_MODEL in your shell before use. Never
-          commit credentials.
+          <code>agent.py</code> is our stage 4 agent. Set CHAT_AI_API_KEY and
+          CHAT_AI_MODEL in your shell first, and never commit the key. Set
+          SEARCH_API_BASE_URL to use a deployed API instead of localhost.
         </p>
       </div>
     );

@@ -17,8 +17,7 @@
     "postinstall": "prisma generate",
     "contract:export": "node --conditions=react-server --import tsx scripts/export-search-contract.ts",
     "contract:check": "node --conditions=react-server --import tsx scripts/export-search-contract.ts --check",
-    "test:e2e": "playwright test",
-    "release:check": "node --conditions=react-server --import tsx scripts/check-search-release.ts"
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -27,7 +26,7 @@
   "dependencies": {
     "@ai-sdk/mcp": "2.0.93",
     "@ai-sdk/openai-compatible": "3.0.87",
-    "@modelcontextprotocol/server": "^2.4.0",
+    "@modelcontextprotocol/server": "2.4.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "ai": "7.0.166",
