@@ -1,9 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  authorizeUser,
-  validateSettings,
-  redact,
-} from "../server/playground/policy";
+import { validateSettings, redact } from "../server/playground/policy";
 import { settingsSchema, runExportSchema } from "../schemas/playground";
 const profile = {
   id: "test",
@@ -15,12 +11,6 @@ const profile = {
   toolChoice: true,
 };
 describe("playground boundaries", () => {
-  it("denies anonymous, unapproved and empty-allowlist access", () => {
-    expect(authorizeUser(null, "u1")).toBe(401);
-    expect(authorizeUser("u2", "u1")).toBe(403);
-    expect(authorizeUser("u1", "")).toBe(403);
-    expect(authorizeUser("u1", "u1,u2")).toBe(200);
-  });
   it("validates settings, model capabilities and selected tools", () => {
     const settings = settingsSchema.parse({ modelId: "test" });
     expect(validateSettings(settings, [profile]).id).toBe("test");

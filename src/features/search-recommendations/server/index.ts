@@ -6,3 +6,4 @@ export { docPages } from "../docs/registry";
 export { createOpenApiDocument } from "../docs/openapi";
 export { mcpHandler, openApiYamlResponse } from "./mcp/handler";
 export { playgroundConfig, playgroundRun } from "./playground/http";
+export { playgroundUnlock, playgroundLock } from "./playground/access";

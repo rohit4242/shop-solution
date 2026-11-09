@@ -118,7 +118,8 @@ export function McpDocsContent({ slug }: { slug: string }) {
           >
             team playground
           </Link>{" "}
-          requires a Better Auth account and explicit user-ID approval.
+          is locked with a shared team access code, because every run uses the
+          team&apos;s Chat AI key. Ask your team for the code.
         </p>
         <ol className="list-decimal space-y-3 pl-5">
           <li>
@@ -146,10 +147,10 @@ export function McpDocsContent({ slug }: { slug: string }) {
           </li>
         </ol>
         <p>
-          History is stored in this browser, namespaced by user ID, with limits
-          of 50 runs, 20 presets and 20 MB. It is not encrypted or centrally
-          shared. Imports are validated, limited to 5 MB and never executed
-          automatically. Export before explicitly deleting history.
+          History is stored only in this browser, with limits of 50 runs, 20
+          presets and 20 MB. It is not encrypted or centrally shared. Imports
+          are validated, limited to 5 MB and never executed automatically.
+          Export before explicitly deleting history.
         </p>
         <p>
           Model credentials and service URLs remain server-side. Unsupported
@@ -210,8 +211,8 @@ python agent.py "Find in-stock wireless products under €25."`}</pre>
           unavailable; the model should report the failure.
         </li>
         <li>
-          <strong>Playground access denied:</strong> a signed-in account still
-          needs approval. Database availability is required for sessions.
+          <strong>Playground asks for the code again:</strong> the team code was
+          changed on the server, or 30 days have passed. Enter the current code.
         </li>
         <li>
           <strong>Model not configured:</strong> an operator must provide

@@ -1,20 +1,8 @@
 import "server-only";
-import { auth } from "@/features/admin-identity/server";
-import { authorizeUser, modelProfiles, validateSettings } from "./policy";
+import { modelProfiles, validateSettings } from "./policy";
+import { accessMessages, isSameOrigin, playgroundAccess } from "./access";
 import { runInputSchema } from "../../schemas/playground";
 import { streamRun } from "./runner";
-export async function playgroundAccess(request: Request) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    const status = authorizeUser(
-      session?.user.id ?? null,
-      process.env.PLAYGROUND_USER_IDS ?? "",
-    );
-    return { status, userId: status === 200 ? session!.user.id : null };
-  } catch {
-    return { status: 503, userId: null };
-  }
-}
 function failure(status: number, message: string) {
   return Response.json(
     { error: { code: `PLAYGROUND_${status}`, message } },
@@ -22,20 +10,11 @@ function failure(status: number, message: string) {
   );
 }
 export async function playgroundConfig(request: Request) {
-  const access = await playgroundAccess(request);
-  if (access.status !== 200)
-    return failure(
-      access.status,
-      access.status === 401
-        ? "Sign in to continue."
-        : access.status === 403
-          ? "Your account is not approved for the playground."
-          : "Authentication is unavailable.",
-    );
+  const access = playgroundAccess(request);
+  if (access !== 200) return failure(access, accessMessages[access]);
   try {
     return Response.json(
       {
-        userId: access.userId,
         enabled: process.env.PLAYGROUND_ENABLED === "true",
         profiles: modelProfiles(),
       },
@@ -46,17 +25,9 @@ export async function playgroundConfig(request: Request) {
   }
 }
 export async function playgroundRun(request: Request) {
-  const access = await playgroundAccess(request);
-  if (access.status !== 200)
-    return failure(
-      access.status,
-      access.status === 401
-        ? "Sign in to continue."
-        : access.status === 403
-          ? "Your account is not approved."
-          : "Authentication is unavailable.",
-    );
-  if (request.headers.get("origin") !== new URL(request.url).origin)
+  const access = playgroundAccess(request);
+  if (access !== 200) return failure(access, accessMessages[access]);
+  if (!isSameOrigin(request))
     return failure(403, "Same-origin requests are required.");
   if (process.env.PLAYGROUND_ENABLED !== "true")
     return failure(503, "The playground is disabled.");

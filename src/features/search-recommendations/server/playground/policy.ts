@@ -4,17 +4,6 @@ import {
   type ModelProfile,
   type PlaygroundSettings,
 } from "../../schemas/playground";
-export function authorizeUser(userId: string | null, allowed: string) {
-  if (!userId) return 401;
-  return new Set(
-    allowed
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  ).has(userId)
-    ? 200
-    : 403;
-}
 export function modelProfiles(): ModelProfile[] {
   if (!process.env.PLAYGROUND_MODELS_JSON) return [];
   const profiles = modelProfileSchema

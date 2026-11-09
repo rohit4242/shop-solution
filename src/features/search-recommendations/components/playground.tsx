@@ -1,6 +1,5 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { authClient } from "@/features/admin-identity";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import {
@@ -39,13 +38,14 @@ const examples = [
   ],
 ];
 const control = "w-full rounded-md border bg-background p-2 text-sm";
-type Config = { userId: string; enabled: boolean; profiles: ModelProfile[] };
+type Config = { enabled: boolean; profiles: ModelProfile[] };
+// History lives in this browser's IndexedDB under one key for the whole team code.
+const HISTORY_KEY = "team";
 export function SearchPlayground() {
   const [config, setConfig] = useState<Config | null>(null),
     [gate, setGate] = useState("Checking access…"),
     [error, setError] = useState("");
-  const [email, setEmail] = useState(""),
-    [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [settings, setSettings] = useState<PlaygroundSettings>(
     settingsSchema.parse({ modelId: "unconfigured" }),
   );
@@ -78,8 +78,7 @@ export function SearchPlayground() {
     setPresetName("");
     setPresetId("");
     setCompareId("");
-    setEmail("");
-    setPassword("");
+    setAccessCode("");
     setError("");
     setSettings(settingsSchema.parse({ modelId: "unconfigured" }));
   }, []);
@@ -98,11 +97,11 @@ export function SearchPlayground() {
       }
       const value = body as Config;
       const [history, savedPresets] = await Promise.all([
-        listRuns(value.userId),
-        listPresets(value.userId),
+        listRuns(HISTORY_KEY),
+        listPresets(HISTORY_KEY),
       ]);
       if (!mounted.current || generation !== accessGeneration.current) return;
-      activeUser.current = value.userId;
+      activeUser.current = HISTORY_KEY;
       setConfig(value);
       setSettings(
         settingsSchema.parse({
@@ -132,18 +131,17 @@ export function SearchPlayground() {
       const generation = accessGeneration.current;
       void fetch("/api/search-playground/config", { cache: "no-store" })
         .then(async (response) => {
-          const body = await response.json();
           if (
             mounted.current &&
             generation === accessGeneration.current &&
             activeUser.current &&
-            (!response.ok || body.userId !== activeUser.current)
+            !response.ok
           ) {
             abort.current?.abort();
             accessGeneration.current++;
             resetUserEditors();
             setGate(
-              "Session changed. Sign in again to load your local history.",
+              "The access code changed or expired. Enter the team code again.",
             );
           }
         })
@@ -158,10 +156,9 @@ export function SearchPlayground() {
   }, [loadAccess, resetUserEditors]);
   async function persist(value: SavedRun) {
     if (!config) return;
-    await saveRun(config.userId, value);
-    const history = await listRuns(config.userId);
-    if (mounted.current && activeUser.current === config.userId)
-      setRuns(history);
+    await saveRun(HISTORY_KEY, value);
+    const history = await listRuns(HISTORY_KEY);
+    if (mounted.current && activeUser.current === HISTORY_KEY) setRuns(history);
   }
   function changeSettings(value: PlaygroundSettings) {
     if (run) {
@@ -210,10 +207,12 @@ export function SearchPlayground() {
         signal: active.signal,
       });
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
           accessGeneration.current++;
           resetUserEditors();
-          setGate("Session expired or access removed. Sign in again.");
+          setGate(
+            "The access code changed or expired. Enter the team code again.",
+          );
         }
         const body = await response.json();
         throw new Error(body.error?.message ?? "Run failed.");
@@ -234,7 +233,7 @@ export function SearchPlayground() {
           ).state;
           finished = true;
         } else if (!finished) current.outcome = "running";
-        if (mounted.current && activeUser.current === config.userId)
+        if (mounted.current && activeUser.current === HISTORY_KEY)
           setRun({ ...current, events: [...current.events] });
       };
       while (true) {
@@ -255,7 +254,7 @@ export function SearchPlayground() {
     } finally {
       if (mounted.current) {
         setBusy(false);
-        if (activeUser.current === config.userId)
+        if (activeUser.current === HISTORY_KEY)
           setRun({ ...current, events: [...current.events] });
       }
       try {
@@ -312,41 +311,37 @@ export function SearchPlayground() {
           onSubmit={(e) => {
             e.preventDefault();
             void perform(async () => {
-              const result = await authClient.signIn.email({ email, password });
-              setPassword("");
-              if (result.error)
-                throw new Error(result.error.message ?? "Sign-in failed.");
+              const response = await fetch("/api/search-playground/unlock", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: accessCode }),
+              });
+              setAccessCode("");
+              if (!response.ok) {
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error?.message ?? "Unlock failed.");
+              }
               await loadAccess();
             });
           }}
         >
           <label className="block">
-            Email
+            Team access code
             <Input
-              aria-label="Email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </label>
-          <label className="block">
-            Password
-            <Input
-              aria-label="Password"
+              aria-label="Team access code"
               type="password"
-              autoComplete="current-password"
+              autoComplete="off"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              value={accessCode}
+              onChange={(e) => setAccessCode(e.target.value)}
             />
           </label>
-          <Button type="submit">Sign in</Button>
+          <Button type="submit">Unlock</Button>
         </form>
         <p className="text-sm text-muted-foreground">
-          Accounts require explicit team approval. Public MCP and documentation
-          do not require a playground account.
+          The playground runs a real model on the team&apos;s Chat AI key, so it
+          is locked. Ask your team for the code. The API, MCP server and docs
+          are open to everyone.
         </p>
         {error && (
           <p role="alert" className="text-destructive">
@@ -376,19 +371,20 @@ export function SearchPlayground() {
           disabled={busy}
           onClick={() =>
             void perform(async () => {
-              await authClient.signOut();
+              await fetch("/api/search-playground/unlock", {
+                method: "DELETE",
+              });
               await loadAccess();
             })
           }
         >
-          Sign out
+          Lock
         </Button>
       </header>
       {(!config.enabled || !config.profiles.length) && (
         <p role="status" className="rounded-lg border p-4 text-sm">
-          The playground is not configured for live runs. An operator must
-          configure model credentials, profiles, the MCP URL, and
-          PLAYGROUND_ENABLED.
+          The playground is not configured for live runs. Set CHAT_AI_API_KEY,
+          PLAYGROUND_MODELS_JSON and PLAYGROUND_ENABLED=true on the server.
         </p>
       )}
       {error && (
@@ -467,12 +463,12 @@ export function SearchPlayground() {
                 disabled={!presetName.trim()}
                 onClick={() =>
                   void perform(async () => {
-                    await savePreset(config.userId, {
+                    await savePreset(HISTORY_KEY, {
                       id: presetId || crypto.randomUUID(),
                       name: presetName,
                       settings,
                     });
-                    setPresets(await listPresets(config.userId));
+                    setPresets(await listPresets(HISTORY_KEY));
                   })
                 }
               >
@@ -538,8 +534,8 @@ export function SearchPlayground() {
                 variant="outline"
                 onClick={() =>
                   void perform(async () => {
-                    await deletePreset(config.userId, presetId);
-                    setPresets(await listPresets(config.userId));
+                    await deletePreset(HISTORY_KEY, presetId);
+                    setPresets(await listPresets(HISTORY_KEY));
                     setPresetId("");
                   })
                 }
@@ -801,8 +797,8 @@ export function SearchPlayground() {
                   run &&
                   confirm("Export first if needed. Delete this local run?")
                 ) {
-                  await deleteRun(config.userId, run.id);
-                  setRuns(await listRuns(config.userId));
+                  await deleteRun(HISTORY_KEY, run.id);
+                  setRuns(await listRuns(HISTORY_KEY));
                   setRun(null);
                 }
               })
@@ -820,7 +816,7 @@ export function SearchPlayground() {
                     "Export first if needed. Delete all your local runs and presets?",
                   )
                 ) {
-                  await clearHistory(config.userId);
+                  await clearHistory(HISTORY_KEY);
                   setRuns([]);
                   setPresets([]);
                   setRun(null);
