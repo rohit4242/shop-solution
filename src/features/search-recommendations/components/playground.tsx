@@ -42,6 +42,9 @@ type Config = { enabled: boolean; profiles: ModelProfile[] };
 // History lives in this browser's IndexedDB under one key for the whole team code.
 const HISTORY_KEY = "team";
 const CHECKING = "Checking access…";
+const panels = ["Configuration", "Conversation", "Inspector"] as const;
+const sidePanels = ["Configuration", "Inspector"] as const;
+type Panel = (typeof panels)[number];
 export function SearchPlayground() {
   const [config, setConfig] = useState<Config | null>(null),
     [gate, setGate] = useState(CHECKING),
@@ -59,11 +62,9 @@ export function SearchPlayground() {
   const [runs, setRuns] = useState<SavedRun[]>([]),
     [presets, setPresets] = useState<Preset[]>([]),
     [presetName, setPresetName] = useState("");
-  const [tab, setTab] = useState("Conversation"),
+  const [tab, setTab] = useState<Panel>("Conversation"),
     [compareId, setCompareId] = useState(""),
     [presetId, setPresetId] = useState("");
-  const [configWidth, setConfigWidth] = useState(280),
-    [inspectorWidth, setInspectorWidth] = useState(340);
   const abort = useRef<AbortController | null>(null),
     mounted = useRef(true),
     activeUser = useRef<string | null>(null),
@@ -356,17 +357,18 @@ export function SearchPlayground() {
       </section>
     );
   const comparison = runs.find((r) => r.id === compareId);
+  const eventCount = run?.events.length ?? 0;
   return (
-    <section className="space-y-6">
+    <section className="space-y-5">
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs tracking-widest uppercase text-muted-foreground">
             Search & recommendations / Team workspace
           </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
             Playground
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             Configure an experiment. Follow every tool call. Compare what
             changed.
           </p>
@@ -400,160 +402,36 @@ export function SearchPlayground() {
           {error}
         </p>
       )}
-      <div role="tablist" aria-label="Workspace panels" className="flex gap-2">
-        {["Configuration", "Conversation", "Inspector"].map((name) => (
+      {/* Below xl one panel shows at a time. From xl the conversation stays in
+          the main column and Configuration / Inspector share a sticky side panel. */}
+      <div
+        role="tablist"
+        aria-label="Workspace panels"
+        className="flex gap-2 xl:hidden"
+      >
+        {panels.map((name) => (
           <Button
             key={name}
             role="tab"
+            size="sm"
             aria-selected={tab === name}
             variant={tab === name ? "default" : "outline"}
             onClick={() => setTab(name)}
           >
             {name}
+            {name === "Inspector" && eventCount > 0 && (
+              <span aria-hidden className="ml-1 tabular-nums opacity-70">
+                {eventCount}
+              </span>
+            )}
           </Button>
         ))}
       </div>
-      <details className="hidden text-xs xl:block">
-        <summary>Resize workspace panels</summary>
-        <div className="mt-2 flex gap-6">
-          <label>
-            Configuration width
-            <input
-              aria-label="Configuration width"
-              type="range"
-              min={220}
-              max={400}
-              value={configWidth}
-              onChange={(e) => setConfigWidth(Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Inspector width
-            <input
-              aria-label="Inspector width"
-              type="range"
-              min={260}
-              max={500}
-              value={inspectorWidth}
-              onChange={(e) => setInspectorWidth(Number(e.target.value))}
-            />
-          </label>
-        </div>
-      </details>
-      <div className="flex flex-col gap-4 xl:flex-row">
-        <aside
-          style={{ flexBasis: configWidth }}
-          className={`${tab === "Configuration" ? "block" : "hidden"} min-w-0 shrink-0 space-y-5 rounded-xl border p-4 xl:block`}
-        >
-          <h2 className="font-semibold">Configuration</h2>
-          <PlaygroundSettingsPanel
-            settings={settings}
-            profiles={config.profiles}
-            onChange={changeSettings}
-            disabled={busy}
-          />
-          <fieldset disabled={busy} className="space-y-2 border-t pt-4">
-            <legend className="text-sm font-medium">Presets</legend>
-            <Input
-              aria-label="Preset name"
-              placeholder="Preset name"
-              maxLength={80}
-              value={presetName}
-              onChange={(e) => setPresetName(e.target.value)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!presetName.trim()}
-                onClick={() =>
-                  void perform(async () => {
-                    await savePreset(HISTORY_KEY, {
-                      id: presetId || crypto.randomUUID(),
-                      name: presetName,
-                      settings,
-                    });
-                    setPresets(await listPresets(HISTORY_KEY));
-                  })
-                }
-              >
-                Save preset
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setPresetId("");
-                  setPresetName(
-                    presetName
-                      ? `${presetName} copy`.slice(0, 80)
-                      : "New preset",
-                  );
-                }}
-              >
-                Duplicate
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  changeSettings(
-                    settingsSchema.parse({
-                      modelId: config.profiles[0]?.id ?? "unconfigured",
-                      maxOutputTokens: Math.min(
-                        1024,
-                        config.profiles[0]?.maxOutputTokens ?? 1024,
-                      ),
-                    }),
-                  );
-                  setPresetId("");
-                  setPresetName("");
-                }}
-              >
-                Reset
-              </Button>
-            </div>
-            <select
-              aria-label="Saved preset"
-              className={control}
-              value={presetId}
-              onChange={(e) => {
-                setPresetId(e.target.value);
-                const value = presets.find((p) => p.id === e.target.value);
-                if (value) {
-                  changeSettings(value.settings);
-                  setPresetName(value.name);
-                }
-              }}
-            >
-              <option value="">Choose a preset</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {presetId && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() =>
-                  void perform(async () => {
-                    await deletePreset(HISTORY_KEY, presetId);
-                    setPresets(await listPresets(HISTORY_KEY));
-                    setPresetId("");
-                  })
-                }
-              >
-                Delete preset
-              </Button>
-            )}
-          </fieldset>
-        </aside>
+      <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start xl:gap-6">
         <div
-          className={`${tab === "Conversation" ? "block" : "hidden"} min-w-0 flex-1 space-y-4 rounded-xl border p-4 xl:block`}
+          className={`${tab === "Conversation" ? "flex" : "hidden"} min-w-0 flex-col gap-4 rounded-xl border p-4 sm:p-5 xl:flex`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <h2 className="font-semibold">Conversation</h2>
             <span
               data-testid="run-state"
@@ -563,24 +441,7 @@ export function SearchPlayground() {
               {run?.outcome ?? "idle"}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {examples.map(([label, text]) => (
-              <Button
-                key={label}
-                size="sm"
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  setPrompt(text);
-                  setForkMessages(null);
-                  setRun(null);
-                }}
-              >
-                {label}
-              </Button>
-            ))}
-          </div>
-          <div className="min-h-48 space-y-4 rounded-lg bg-muted/40 p-4">
+          <div className="min-h-64 space-y-4 overflow-auto rounded-lg bg-muted/40 p-4 xl:max-h-[60vh] xl:min-h-80">
             {run?.messages.map((m, i) => (
               <div key={i}>
                 <p className="text-xs font-semibold uppercase text-muted-foreground">
@@ -591,81 +452,20 @@ export function SearchPlayground() {
                 </p>
               </div>
             ))}
+            {run && (
+              <p className="text-xs font-semibold uppercase text-muted-foreground">
+                assistant
+              </p>
+            )}
             <p
               data-testid="run-answer"
-              className="whitespace-pre-wrap break-words text-sm leading-7"
+              className={`whitespace-pre-wrap break-words text-sm leading-7 ${run?.answer ? "" : "text-muted-foreground"}`}
             >
               {run?.answer || "Run a task to see the agent response here."}
             </p>
           </div>
-          <form
-            className="space-y-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void start();
-            }}
-          >
-            <label className="block text-sm">
-              Prompt
-              <textarea
-                aria-label="Prompt"
-                className={control}
-                rows={4}
-                maxLength={16000}
-                value={prompt}
-                disabled={busy}
-                onChange={(e) => setPrompt(e.target.value)}
-              />
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                disabled={
-                  busy ||
-                  !config.enabled ||
-                  !config.profiles.length ||
-                  !prompt.trim()
-                }
-              >
-                Run
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={!busy}
-                onClick={() => abort.current?.abort()}
-              >
-                Stop
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  setRun(null);
-                  setPrompt("");
-                  setForkMessages(null);
-                  setCompareId("");
-                }}
-              >
-                New conversation
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy || !run}
-                onClick={() => {
-                  setPrompt(run?.messages.at(-1)?.content ?? "");
-                  setSettings(run!.settings);
-                  setForkMessages(run!.messages.slice(0, -1));
-                  setRun(null);
-                }}
-              >
-                Repeat / fork
-              </Button>
-            </div>
-          </form>
           {run && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -685,38 +485,265 @@ export function SearchPlayground() {
               </Button>
             </div>
           )}
+          <form
+            className="space-y-3 border-t pt-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void start();
+            }}
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Try:</span>
+              {examples.map(([label, text]) => (
+                <Button
+                  key={label}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => {
+                    setPrompt(text);
+                    setForkMessages(null);
+                    setRun(null);
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+            <label className="block space-y-1 text-sm">
+              <span>Prompt</span>
+              <textarea
+                aria-label="Prompt"
+                className={control}
+                rows={3}
+                maxLength={16000}
+                value={prompt}
+                disabled={busy}
+                onChange={(e) => setPrompt(e.target.value)}
+              />
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                disabled={
+                  busy ||
+                  !config.enabled ||
+                  !config.profiles.length ||
+                  !prompt.trim()
+                }
+              >
+                Run
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!busy}
+                onClick={() => abort.current?.abort()}
+              >
+                Stop
+              </Button>
+              <span className="flex-1" />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => {
+                  setRun(null);
+                  setPrompt("");
+                  setForkMessages(null);
+                  setCompareId("");
+                }}
+              >
+                New conversation
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy || !run}
+                onClick={() => {
+                  setPrompt(run?.messages.at(-1)?.content ?? "");
+                  setSettings(run!.settings);
+                  setForkMessages(run!.messages.slice(0, -1));
+                  setRun(null);
+                }}
+              >
+                Repeat / fork
+              </Button>
+            </div>
+          </form>
         </div>
-        <aside
-          style={{ flexBasis: inspectorWidth }}
-          className={`${tab === "Inspector" ? "block" : "hidden"} min-w-0 shrink-0 space-y-3 rounded-xl border p-4 xl:block`}
-        >
-          <h2 className="font-semibold">Inspector</h2>
-          <p className="text-xs text-muted-foreground">
-            SDK-normalized events, not raw provider traffic. Usage appears only
-            when reported. Hidden reasoning and secrets are excluded.
-          </p>
-          <div className="max-h-[700px] space-y-2 overflow-auto">
-            {!run?.events.length && (
-              <p className="text-sm text-muted-foreground">No events yet.</p>
-            )}
-            {run?.events.map((event) => (
-              <details key={event.seq} className="rounded-md border p-2">
-                <summary className="cursor-pointer text-xs">
-                  <span className="mr-2 text-muted-foreground">
-                    {event.seq} · step {event.step}
-                  </span>
-                  <span>{event.type}</span>
-                </summary>
-                <time className="text-xs text-muted-foreground">
-                  {event.time}
-                </time>
-                <pre className="mt-2 overflow-auto text-xs whitespace-pre-wrap break-all">
-                  {JSON.stringify(event.data, null, 2)}
-                </pre>
-              </details>
-            ))}
+        <div className="min-w-0 xl:sticky xl:top-24 xl:flex xl:max-h-[calc(100vh-7rem)] xl:flex-col xl:overflow-hidden xl:rounded-xl xl:border">
+          <div
+            role="tablist"
+            aria-label="Side panel"
+            className="hidden gap-1 border-b p-2 xl:flex"
+          >
+            {sidePanels.map((name) => {
+              const selected =
+                name === "Inspector"
+                  ? tab === "Inspector"
+                  : tab !== "Inspector";
+              return (
+                <Button
+                  key={name}
+                  role="tab"
+                  size="sm"
+                  className="flex-1"
+                  aria-selected={selected}
+                  variant={selected ? "secondary" : "ghost"}
+                  onClick={() => setTab(name)}
+                >
+                  {name}
+                  {name === "Inspector" && eventCount > 0 && (
+                    <span aria-hidden className="ml-1 tabular-nums opacity-70">
+                      {eventCount}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
           </div>
-        </aside>
+          <aside
+            className={`${tab === "Configuration" ? "block" : "hidden"} ${tab === "Inspector" ? "xl:hidden" : "xl:block"} min-w-0 space-y-5 rounded-xl border p-4 text-sm xl:min-h-0 xl:overflow-y-auto xl:rounded-none xl:border-0`}
+          >
+            <h2 className="font-semibold xl:sr-only">Configuration</h2>
+            <PlaygroundSettingsPanel
+              settings={settings}
+              profiles={config.profiles}
+              onChange={changeSettings}
+              disabled={busy}
+            />
+            <fieldset disabled={busy} className="space-y-2 border-t pt-4">
+              <legend className="text-sm font-medium">Presets</legend>
+              <Input
+                aria-label="Preset name"
+                placeholder="Preset name"
+                maxLength={80}
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!presetName.trim()}
+                  onClick={() =>
+                    void perform(async () => {
+                      await savePreset(HISTORY_KEY, {
+                        id: presetId || crypto.randomUUID(),
+                        name: presetName,
+                        settings,
+                      });
+                      setPresets(await listPresets(HISTORY_KEY));
+                    })
+                  }
+                >
+                  Save preset
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPresetId("");
+                    setPresetName(
+                      presetName
+                        ? `${presetName} copy`.slice(0, 80)
+                        : "New preset",
+                    );
+                  }}
+                >
+                  Duplicate
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    changeSettings(
+                      settingsSchema.parse({
+                        modelId: config.profiles[0]?.id ?? "unconfigured",
+                        maxOutputTokens: Math.min(
+                          1024,
+                          config.profiles[0]?.maxOutputTokens ?? 1024,
+                        ),
+                      }),
+                    );
+                    setPresetId("");
+                    setPresetName("");
+                  }}
+                >
+                  Reset
+                </Button>
+              </div>
+              <select
+                aria-label="Saved preset"
+                className={control}
+                value={presetId}
+                onChange={(e) => {
+                  setPresetId(e.target.value);
+                  const value = presets.find((p) => p.id === e.target.value);
+                  if (value) {
+                    changeSettings(value.settings);
+                    setPresetName(value.name);
+                  }
+                }}
+              >
+                <option value="">Choose a preset</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              {presetId && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    void perform(async () => {
+                      await deletePreset(HISTORY_KEY, presetId);
+                      setPresets(await listPresets(HISTORY_KEY));
+                      setPresetId("");
+                    })
+                  }
+                >
+                  Delete preset
+                </Button>
+              )}
+            </fieldset>
+          </aside>
+          <aside
+            className={`${tab === "Inspector" ? "block" : "hidden"} min-w-0 space-y-3 rounded-xl border p-4 xl:min-h-0 xl:overflow-y-auto xl:rounded-none xl:border-0`}
+          >
+            <h2 className="font-semibold xl:sr-only">Inspector</h2>
+            <p className="text-xs text-muted-foreground">
+              SDK-normalized events, not raw provider traffic. Usage appears
+              only when reported. Hidden reasoning and secrets are excluded.
+            </p>
+            <div className="max-h-[700px] space-y-2 overflow-auto xl:max-h-none xl:overflow-visible">
+              {!run?.events.length && (
+                <p className="text-sm text-muted-foreground">No events yet.</p>
+              )}
+              {run?.events.map((event) => (
+                <details key={event.seq} className="rounded-md border p-2">
+                  <summary className="cursor-pointer text-xs">
+                    <span className="mr-2 text-muted-foreground">
+                      {event.seq} · step {event.step}
+                    </span>
+                    <span>{event.type}</span>
+                  </summary>
+                  <time className="text-xs text-muted-foreground">
+                    {event.time}
+                  </time>
+                  <pre className="mt-2 overflow-auto text-xs whitespace-pre-wrap break-all">
+                    {JSON.stringify(event.data, null, 2)}
+                  </pre>
+                </details>
+              ))}
+            </div>
+          </aside>
+        </div>
       </div>
       <section className="space-y-4 rounded-xl border p-4">
         <h2 className="font-semibold">Local run history</h2>
