@@ -256,7 +256,8 @@ test("fork preserves the original multi-turn input after settings change", async
     .click();
   await page.getByRole("tab", { name: "Configuration", exact: true }).click();
   await page.getByLabel("Agent steps", { exact: true }).fill("4");
-  await page.getByRole("tab", { name: "Conversation", exact: true }).click();
+  // From xl (Playwright's default 1280px) the conversation stays visible beside
+  // the side panel, so there is no Conversation tab to switch back to.
   await page.getByRole("button", { name: "Run", exact: true }).click();
   await expect(page.getByTestId("run-state")).toHaveText("completed");
   expect((requests[2] as { messages: unknown }).messages).toEqual(
