@@ -6,6 +6,7 @@ Our team owns product search, filters, autocomplete and recommendations for the 
 
 | You want to…                         | Go to                                                                                      |
 | ------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Review the module's browser UI scope | [ui-spec.md](ui-spec.md)                                                                   |
 | Call the API                         | [API-CONTRACT.md](API-CONTRACT.md) or the website at `/docs/search-recommendations`        |
 | Read the machine-readable contract   | [openapi.yaml](openapi.yaml), served at `/docs/search-recommendations/openapi.yaml` too    |
 | Connect an AI agent over MCP         | [tools/search-recommendations-mcp](../../tools/search-recommendations-mcp/README.md)       |
