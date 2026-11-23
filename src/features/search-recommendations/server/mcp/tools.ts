@@ -32,6 +32,7 @@ function definition(name: ToolName) {
   const parameters = spec.paths[endpoint.path].get.parameters;
   const shape: Record<string, z.ZodType> = {};
   for (const parameter of parameters) {
+    if (parameter.name === "scope") continue;
     const s = parameter.schema as {
       type?: string;
       enum?: string[];

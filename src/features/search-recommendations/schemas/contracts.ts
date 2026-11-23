@@ -95,6 +95,7 @@ const orderedPrices = (v: { minPriceMinor?: number; maxPriceMinor?: number }) =>
 export const searchQuerySchema = z
   .strictObject({
     ...filters,
+    scope: z.enum(["public", "moderation"]).optional(),
     sort: z
       .enum(["relevance", "price_asc", "price_desc", "name_asc"])
       .default("relevance"),
@@ -116,12 +117,20 @@ export const recommendationQuerySchema = z.strictObject({
   availability: availabilitySchema.optional(),
   limit: integerQuery(1, 20).default(5),
 });
-export const searchResponseSchema = z.strictObject({
-  data: z.strictObject({
-    items: z.array(discoveryItemSchema),
-    total: z.number().int().nonnegative(),
-    page: z.number().int().positive(),
-    pageSize: z.number().int().min(1).max(100),
+const searchPageSchema = z.strictObject({
+  items: z.array(discoveryItemSchema),
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().min(1).max(100),
+});
+export const searchResponseSchema = z.strictObject({ data: searchPageSchema });
+export const moderationSearchResponseSchema = z.strictObject({
+  data: searchPageSchema.extend({
+    items: z.array(
+      discoveryItemSchema.extend({
+        status: z.enum(["active", "pending", "rejected", "blocked"]),
+      }),
+    ),
   }),
 });
 export const facetsResponseSchema = z.strictObject({

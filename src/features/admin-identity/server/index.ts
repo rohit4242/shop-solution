@@ -1,2 +1,5 @@
 import "server-only";
-export { auth } from "@/server/auth";
+export {
+  checkIdentityPermission,
+  readIdentitySession,
+} from "./identity-client";

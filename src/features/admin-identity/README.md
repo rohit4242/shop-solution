@@ -21,7 +21,7 @@ Read ../../../docs/architecture.md and ../../../docs/coding-conventions.md.
 
 ## Integration contract
 
-No public operations or owned tables have been agreed yet. Before implementation, document exported operations, inputs, outputs, authorization, errors and owned data here. Consumers import index.ts or server/index.ts, never internals.
+The server entry point exposes `readIdentitySession(request)` for the shared sign-in display and `checkIdentityPermission(request, permission)` for a live permission check. Both forward only the external Identity session cookie to `ADMIN_IDENTITY_API_URL`. The permission adapter follows the proposed `GET /auth/check` contract. Verify it against Admin's running service before the joint demo. Consumers import `index.ts` or `server/index.ts`.
 
 ## Ownership
 

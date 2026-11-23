@@ -11,6 +11,7 @@ Start it in the MCP Inspector:  mcp dev server.py
 import json
 import logging
 import os
+import re
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -30,12 +31,12 @@ Sort = Literal["relevance", "price_asc", "price_desc", "name_asc"]
 mcp = MCPServer("shop-search-recommendations")
 
 
-def call_api(path: str, params: dict) -> str:
+def call_api(path: str, params: dict, *, headers: dict[str, str] | None = None) -> str:
     """Send one GET request to the API and return the result as text for the model."""
     query = {key: value for key, value in params.items() if value is not None}
     try:
         with httpx.Client(base_url=API_BASE_URL, timeout=10, transport=TRANSPORT) as client:
-            response = client.get(path, params=query)
+            response = client.get(path, params=query, headers=headers)
     except httpx.TimeoutException:
         return "ERROR: the Search API did not answer within 10 seconds."
     except httpx.RequestError:
@@ -218,5 +219,25 @@ def openapi_spec() -> str:
     return OPENAPI_FILE.read_text(encoding="utf-8")
 
 
+def moderation_search(
+    q: Query = "",
+    page: Annotated[int, Field(ge=1, description="Page number, starting at 1.")] = 1,
+    pageSize: Annotated[int, Field(ge=1, le=100, description="Offers per page.")] = 20,
+) -> str:
+    """Read offers and their moderation status with the local test moderator's session."""
+    token = os.environ.get("SEARCH_MODERATION_SESSION_TOKEN", "")
+    if not re.fullmatch(r"[A-Za-z0-9._~+/=-]+", token):
+        return "ERROR: configure a local test moderator session."
+    if not re.fullmatch(r"http://(?:localhost|127\.0\.0\.1):[0-9]{1,5}", API_BASE_URL):
+        return "ERROR: moderation search requires an explicit local Search origin."
+    return call_api(
+        "/api/v1/search",
+        {"scope": "moderation", "q": q, "page": page, "pageSize": pageSize},
+        headers={"Cookie": f"erp_access_token={token}"},
+    )
+
+
 if __name__ == "__main__":
+    if os.environ.get("SEARCH_MODERATION_SESSION_TOKEN"):
+        mcp.tool()(moderation_search)
     mcp.run(transport="stdio")
