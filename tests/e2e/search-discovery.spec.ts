@@ -1,16 +1,6 @@
-import { resolve } from "node:path";
 import { test, expect } from "@playwright/test";
 
 const workbench = "/docs/search-recommendations/discover";
-const screenshot = (...segments: string[]) =>
-  resolve(
-    "docs",
-    "search-recommendations",
-    "exercises",
-    "session-6-ui",
-    "screenshots",
-    ...segments,
-  );
 
 const product = {
   offerId: "off_1",
@@ -372,14 +362,14 @@ test("completes search and recommendations using the keyboard only", async ({
 
 test("captures the empty, loading, error and success states", async ({
   page,
-}) => {
+}, testInfo) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(workbench);
   const searchField = page.getByRole("textbox", { name: "Search phrase" });
   await searchField.fill("wireless");
   await searchField.fill("");
   await page.screenshot({
-    path: screenshot("empty.png"),
+    path: testInfo.outputPath("empty.png"),
     fullPage: true,
     animations: "disabled",
     caret: "initial",
@@ -399,7 +389,7 @@ test("captures the empty, loading, error and success states", async ({
     page.getByText("Searching catalog…", { exact: true }),
   ).toBeVisible();
   await page.screenshot({
-    path: screenshot("loading.png"),
+    path: testInfo.outputPath("loading.png"),
     fullPage: true,
     animations: "disabled",
     caret: "initial",
@@ -426,7 +416,7 @@ test("captures the empty, loading, error and success states", async ({
     }),
   ).toBeVisible();
   await page.screenshot({
-    path: screenshot("error.png"),
+    path: testInfo.outputPath("error.png"),
     fullPage: true,
     animations: "disabled",
     caret: "initial",
@@ -439,7 +429,7 @@ test("captures the empty, loading, error and success states", async ({
   await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(page.getByText("Wireless Mouse", { exact: true })).toBeVisible();
   await page.screenshot({
-    path: screenshot("success.png"),
+    path: testInfo.outputPath("success.png"),
     fullPage: true,
     animations: "disabled",
     caret: "initial",

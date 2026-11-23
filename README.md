@@ -86,7 +86,7 @@ shop-solution/
 └── .env.example                 # Variable names and local-only examples
 ```
 
-Some directories contain only `.gitkeep` placeholders. A folder does not mean its feature is implemented. Playwright is planned for the first integrated journey and is not installed yet.
+Some directories contain only `.gitkeep` placeholders. A folder does not mean its feature is implemented. Playwright covers the Search developer workbench and playground. Run `pnpm test:e2e` with Chromium installed. To test a running local app, set `PLAYWRIGHT_BASE_URL` to its origin, for example `http://localhost:3006`.
 
 ### Inside a feature
 

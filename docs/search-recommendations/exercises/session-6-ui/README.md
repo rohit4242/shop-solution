@@ -13,8 +13,9 @@ http://localhost:3000/docs/search-recommendations/discover.
 The shared application and its Search & Recommendations API start with that
 single command. Admin & Identity remains a separate service.
 
-Run the browser checks with `corepack pnpm test:e2e`. The four main-screen
-states are saved in [`screenshots/`](screenshots/):
+Run the browser checks with `corepack pnpm test:e2e`. New captures go to the
+Playwright test output. The original four main-screen states are saved in
+[`screenshots/`](screenshots/):
 [empty](screenshots/empty.png), [loading](screenshots/loading.png),
 [error](screenshots/error.png), and [success](screenshots/success.png). The
 project-level startup instructions remain in the
