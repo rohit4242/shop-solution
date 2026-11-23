@@ -26,3 +26,7 @@ The server entry point exposes `readIdentitySession(request)` for the shared sig
 ## Ownership
 
 The matching class team owns this area. GitHub handles and reviewers will be assigned after class agreement.
+
+## Local moderation demo
+
+Start the separate Admin & Identity service before opening its [Admin panel](http://localhost:8000/admin/) or [API explorer](http://localhost:8000/docs). These local addresses are for the Search integration demo. See the [moderation flow draft](../../../docs/search-recommendations/exercises/cross-module-flow/flow.md) and the [Search API contract](../../../docs/search-recommendations/API-CONTRACT.md) for the handoff.
