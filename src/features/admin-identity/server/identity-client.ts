@@ -23,7 +23,7 @@ async function identityFetch(path: string, cookie: string, timeout: number) {
   return fetch(
     new URL(
       path,
-      process.env.ADMIN_IDENTITY_API_URL ?? "http://localhost:8000",
+      process.env.ADMIN_IDENTITY_API_URL?.trim() || "http://localhost:8000",
     ),
     {
       headers: { Cookie: cookie },
