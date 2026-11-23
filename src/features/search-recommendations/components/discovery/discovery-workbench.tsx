@@ -17,13 +17,13 @@ import {
   errorResponseSchema,
   recommendationsResponseSchema,
   searchResponseSchema,
-} from "../schemas/contracts";
-import { identitySessionStatusSchema } from "../schemas/identity-session";
-import type { DiscoveryItem } from "../types/discovery";
+} from "../../schemas/contracts";
+import { identitySessionStatusSchema } from "../../schemas/identity-session";
+import type { DiscoveryItem } from "../../types/discovery";
 import type {
   RecommendationsResponse,
   SearchResponse,
-} from "../types/responses";
+} from "../../types/responses";
 
 type ViewState<T> =
   | { kind: "idle" }

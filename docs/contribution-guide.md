@@ -8,6 +8,6 @@ Before requesting review, explain the behavior change, issue, affected teams, ve
 
 Create one organization team per feature. Populate .github/CODEOWNERS with real handles. Protect main against direct pushes and force pushes; require PR review, resolved conversations and CI. Confirm protection availability for the selected GitHub plan and repository visibility. CODEOWNERS alone does not enforce approval.
 
-## Planned CI
+## Local checks and CI
 
-Run pnpm install --frozen-lockfile, pnpm lint, pnpm typecheck, pnpm test and pnpm build. Add Playwright smoke checks when the first journey works. See review-policy.md for the two-group requirement.
+Run pnpm install --frozen-lockfile, pnpm lint, pnpm typecheck, pnpm test and pnpm build. Run `pnpm contract:check`, `pnpm format:check`, and `pnpm test:e2e` for Search changes. Install Chromium first with `pnpm exec playwright install chromium`. The E2E runner starts the default dev server or uses `PLAYWRIGHT_BASE_URL` when you provide a running local app. See review-policy.md for the two-group requirement.

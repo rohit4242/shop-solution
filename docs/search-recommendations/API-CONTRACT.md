@@ -55,6 +55,6 @@ curl 'http://localhost:3000/api/v1/recommendations/similar?productId=prd_1'
 curl 'http://localhost:3000/api/v1/recommendations/also-bought?productId=prd_1'
 ```
 
-Zod schemas: `src/features/search-recommendations/schemas/contracts.ts`. Inferred types: `types/discovery.ts`. Endpoint descriptions, examples and parameter metadata: `docs/registry.ts` inside the feature. OpenAPI derives validation schemas from Zod. Documentation tests compare example JSON against actual API responses and validate empty response shapes.
+Zod schemas: `src/features/search-recommendations/schemas/contracts.ts`. Inferred types: `types/discovery.ts`. Endpoint descriptions, examples and parameter metadata: `docs/endpoints.ts` inside the feature. OpenAPI derives validation schemas from Zod. Documentation tests compare example JSON against actual API responses and validate empty response shapes.
 
 Web docs provide full response examples, error tables, ranking, disjunctive facets, data flow, team dependencies and adapter integration gates. All functionality is mock-backed until reviewed providers replace the fixtures. Two external-group approvals and affected-owner reviews are still required before merge.

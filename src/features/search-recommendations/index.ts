@@ -11,5 +11,5 @@ export type {
   AutocompleteQueryParams,
   RecommendationQueryParams,
 } from "./types/responses";
-export { SearchPlayground } from "./components/playground";
-export { DiscoveryWorkbench } from "./components/discovery-workbench";
+export { SearchPlayground } from "./components/playground/playground";
+export { DiscoveryWorkbench } from "./components/discovery/discovery-workbench";

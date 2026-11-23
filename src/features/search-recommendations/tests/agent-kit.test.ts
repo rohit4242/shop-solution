@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { agentBrief, agentSkill, mcpInstallSnippets } from "../docs/agent-kit";
-import { endpointDefinitions } from "../docs/registry";
+import { endpointDefinitions } from "../docs/endpoints";
 
 const base = "https://shop.example";
 

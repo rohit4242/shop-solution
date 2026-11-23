@@ -1,5 +1,5 @@
 import "server-only";
-import { endpointDefinitions, type Parameter } from "./registry";
+import { endpointDefinitions, type Parameter } from "./endpoints";
 import { toolDefinitions, type ToolName } from "../server/mcp/tools";
 import { displayOrigin, mcpPath } from "../server/origin";
 

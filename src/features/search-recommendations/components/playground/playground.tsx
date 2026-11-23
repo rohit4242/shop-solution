@@ -10,7 +10,7 @@ import {
   type PlaygroundSettings,
   type SavedRun,
   type Preset,
-} from "../schemas/playground";
+} from "../../schemas/playground";
 import {
   listRuns,
   saveRun,
@@ -19,8 +19,8 @@ import {
   listPresets,
   savePreset,
   deletePreset,
-} from "../utils/playground-history";
-import { compareRuns } from "../utils/compare-playground-runs";
+} from "../../utils/playground-history";
+import { compareRuns } from "../../utils/compare-playground-runs";
 import { PlaygroundSettingsPanel } from "./playground-settings";
 const examples = [
   [

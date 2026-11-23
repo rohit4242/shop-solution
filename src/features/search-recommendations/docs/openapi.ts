@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { endpointDefinitions } from "./registry";
+import { endpointDefinitions } from "./endpoints";
 import {
   discoveryItemSchema,
   errorResponseSchema,

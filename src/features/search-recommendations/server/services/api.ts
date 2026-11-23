@@ -1,7 +1,7 @@
 import "server-only";
 import { checkIdentityPermission } from "@/features/admin-identity/server";
 import { randomUUID } from "node:crypto";
-import { endpointDefinitions } from "../../docs/registry";
+import { endpointDefinitions } from "../../docs/endpoints";
 import { ZodError } from "zod";
 import {
   searchQuerySchema,
