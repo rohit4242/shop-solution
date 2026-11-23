@@ -45,6 +45,8 @@ Errors `{error:{code,message}}`: 400 INVALID_INPUT, 404 PRODUCT_NOT_FOUND, 503 C
 
 The permission check follows Admin's proposed `GET /auth/check` contract and requires verification against the running Identity API. The catalog still uses fixtures. Public MCP search stays on public scope.
 
+For the local Admin panel, start Search with `SEARCH_ENABLE_LOCAL_ADMIN_CORS=true pnpm dev --port 3006`. Only `http://localhost:8000` receives credentialed CORS headers for the Search route. The panel sends the request with `credentials: "include"`. Use `localhost` for the panel and Search URLs so the browser can send the host-only Identity cookie. The CORS option is disabled by default.
+
 ## Examples and source of truth
 
 ```sh
