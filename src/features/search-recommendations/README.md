@@ -1,10 +1,11 @@
 # Search & Recommendations
 
-Mock-backed implementation of five anonymous GET APIs and developer documentation. Storefront owns shopping UI; our UI is developer-facing only. No database tables or migrations are owned here.
+Mock-backed implementation of five public GET APIs, protected moderation search, and developer documentation. Storefront owns shopping UI and Admin & Identity owns the moderation UI. No database tables or migrations are owned here.
 
 ## Public interfaces
 
 - `/api/v1/search`: text matching, filters, sorting, pagination.
+- `/api/v1/search?scope=moderation`: live Identity permission check for `offers:approve` before reading matching active, pending, rejected, and blocked offers with their status. Removed offers are excluded. The default scope is public.
 - `/api/v1/search/facets`: disjunctive category, seller, stock counts and price range.
 - `/api/v1/search/autocomplete`: normalized product-name prefix suggestions.
 - `/api/v1/recommendations/similar`: same-category attribute/price ranking.
@@ -19,7 +20,7 @@ Mock-backed implementation of five anonymous GET APIs and developer documentatio
   validates the response, and does not gate anonymous discovery APIs.
 - `/docs/search-recommendations/openapi.json`: schema-derived OpenAPI 3.1 download.
 
-All JSON success responses use `{ data: ... }`; failures use `{ error: { code, message } }`. Public endpoints require no token and return only active offers, including out-of-stock offers by default. Requests reject unknown/repeated keys and invalid numbers. Query defaults, limits, schemas, response examples and errors are documented on the website and in [API-CONTRACT.md](../../../docs/search-recommendations/API-CONTRACT.md).
+All JSON success responses use `{ data: ... }`; failures use `{ error: { code, message } }`. Public requests require no token and return only active offers, including out-of-stock offers by default. Requests reject unknown/repeated keys and invalid numbers. Query defaults, limits, schemas, response examples and errors are documented on the website and in [API-CONTRACT.md](../../../docs/search-recommendations/API-CONTRACT.md).
 
 Public client-safe exports: `DiscoveryItem`, `MarketplaceOffer`, response-envelope types and wire query-parameter types (inferred from Zod). Public server exports: `handleDiscoveryRequest`, documentation composition and OpenAPI generation. Routes consume `server/index.ts`. Schemas live in `schemas/`, pure normalization in `utils/`, matching and recommendation logic in `server/services/`, source adapters and lazy snapshot loading in `server/repositories/`. Zod schemas and inferred types define contracts; no other team's internals are imported.
 

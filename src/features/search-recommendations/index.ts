@@ -1,6 +1,7 @@
 export type { DiscoveryItem, MarketplaceOffer } from "./types/discovery";
 export type {
   SearchResponse,
+  ModerationSearchResponse,
   FacetsResponse,
   AutocompleteResponse,
   RecommendationsResponse,

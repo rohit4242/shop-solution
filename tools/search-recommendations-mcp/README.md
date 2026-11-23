@@ -57,4 +57,11 @@ Output looks like the lecture's stage 4: one `[n] tool(arguments)` line per call
 
 ## Point it at another API
 
+For local moderation rehearsal, run Search on `http://localhost:3006` and
+set `SEARCH_API_BASE_URL` to that origin. Supply the test moderator's
+`erp_access_token` value as `SEARCH_MODERATION_SESSION_TOKEN` in the local
+process environment. The stdio server then offers the read-only
+`moderation_search` tool. Keep the token out of checked-in configuration.
+The existing public Search tool never sends the cookie.
+
 The server calls `http://127.0.0.1:3000` by default. Set `SEARCH_API_BASE_URL` to use a deployed API instead, for example `https://your-app.vercel.app`.

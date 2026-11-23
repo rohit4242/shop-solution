@@ -44,12 +44,20 @@ describe("documentation matches HTTP contracts", () => {
     expect(Object.keys(spec.paths)).toHaveLength(5);
     for (const endpoint of Object.values(endpointDefinitions)) {
       const operation = spec.paths[endpoint.path].get;
-      expect(operation.parameters.map((p) => p.name)).toEqual(
-        endpoint.parameters.map((p) => p.name),
-      );
+      const search = endpoint.path === "/api/v1/search";
+      expect(operation.parameters.map((p) => p.name)).toEqual([
+        ...endpoint.parameters.map((p) => p.name),
+        ...(search ? ["scope"] : []),
+      ]);
       for (const parameter of operation.parameters)
         expect(parameter.schema).toBeDefined();
-      expect(operation.security).toEqual([]);
+      expect(operation.security).toEqual(
+        search ? [{}, { identitySession: [] }] : [],
+      );
+      if (search)
+        expect(Object.keys(operation.responses)).toEqual(
+          expect.arrayContaining(["401", "403", "502", "503"]),
+        );
     }
     expect(new Set(docPages.map((p) => p.slug)).size).toBe(docPages.length);
   });

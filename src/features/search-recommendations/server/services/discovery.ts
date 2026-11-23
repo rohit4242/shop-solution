@@ -53,7 +53,11 @@ export function matches(o: IndexedOffer, f: Filters): boolean {
 const byName = (a: IndexedOffer, b: IndexedOffer) =>
   compare(normalize(a.name), normalize(b.name)) ||
   compare(a.productId, b.productId);
-export function search(snapshot: CatalogSnapshot, q: SearchQuery) {
+export function search<Item>(
+  snapshot: CatalogSnapshot,
+  q: SearchQuery,
+  toItem: (offer: IndexedOffer) => Item,
+) {
   const ranked = snapshot.offers
     .filter((o) => matches(o, q))
     .map((o) => ({ offer: o, score: relevance(o, q.q) ?? 0 }));
@@ -71,7 +75,7 @@ export function search(snapshot: CatalogSnapshot, q: SearchQuery) {
   return {
     items: ranked
       .slice(offset, offset + q.pageSize)
-      .map((x) => publicItem(x.offer)),
+      .map((x) => toItem(x.offer)),
     total: ranked.length,
     page: q.page,
     pageSize: q.pageSize,

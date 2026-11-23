@@ -35,6 +35,8 @@ def test_offers_exactly_the_five_tools():
 @pytest.mark.parametrize("name,path", TOOL_PATHS.items())
 def test_tool_parameters_match_the_openapi_contract(name, path):
     contract = {p["name"]: p for p in SPEC["paths"][path]["get"]["parameters"]}
+    if name == "search":
+        contract.pop("scope")  # the public Search tool never forwards moderation scope
     schema = TOOLS[name].input_schema
     assert set(schema["properties"]) == set(contract)
     required = {n for n, p in contract.items() if p.get("required")}
@@ -92,3 +94,22 @@ def test_connection_error_comes_back_as_text(monkeypatch):
 
 def test_openapi_resource_is_the_contract():
     assert server.openapi_spec().startswith("openapi: 3.1")
+
+
+def test_local_moderation_uses_the_configured_session_only_for_the_protected_tool(monkeypatch):
+    monkeypatch.setenv("SEARCH_MODERATION_SESSION_TOKEN", "test-token")
+    monkeypatch.setattr(server, "API_BASE_URL", "http://localhost:3006")
+    requests = mock_api(monkeypatch, lambda _: httpx.Response(200, json={"data": {"items": []}}))
+    assert json.loads(server.moderation_search(q="charger")) == {"items": []}
+    server.search(q="charger")
+    assert requests[0].url.params["scope"] == "moderation"
+    assert requests[0].headers["cookie"] == "erp_access_token=test-token"
+    assert "cookie" not in requests[1].headers
+
+
+def test_moderation_rejects_nonlocal_origin_without_sending_the_cookie(monkeypatch):
+    monkeypatch.setenv("SEARCH_MODERATION_SESSION_TOKEN", "test-token")
+    monkeypatch.setattr(server, "API_BASE_URL", "https://example.com")
+    requests = mock_api(monkeypatch, lambda _: httpx.Response(200))
+    assert server.moderation_search().startswith("ERROR:")
+    assert requests == []

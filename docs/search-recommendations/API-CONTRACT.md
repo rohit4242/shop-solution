@@ -32,6 +32,19 @@ Query limit 200 chars/20 terms; autocomplete minimum 2 chars. Default page 1/pag
 
 Errors `{error:{code,message}}`: 400 INVALID_INPUT, 404 PRODUCT_NOT_FOUND, 503 CATALOG_UNAVAILABLE/RECOMMENDATION_DATA_UNAVAILABLE, 500 INTERNAL_ERROR. No matches returns 200 empty; provider failures never masquerade as empty results.
 
+## Moderation search in 1.1.0
+
+`GET /api/v1/search?scope=moderation` checks `offers:approve` with Admin & Identity on every request. It forwards the browser's `erp_access_token` cookie to the server-side permission check. Items add `status` and include matching active, pending, rejected, and blocked offers. Removed offers never appear. Omitted scope and `scope=public` use the existing public response and make no Identity call.
+
+| HTTP status | Moderation error                                                                      |
+| ----------- | ------------------------------------------------------------------------------------- |
+| 401         | `UNAUTHENTICATED` for missing or expired login                                        |
+| 403         | `FORBIDDEN` for denied permission                                                     |
+| 502         | `IDENTITY_INVALID_RESPONSE` for an unexpected Identity client error                   |
+| 503         | `IDENTITY_UNAVAILABLE` for Identity outages, timeouts, or malformed success responses |
+
+The permission check follows Admin's proposed `GET /auth/check` contract and requires verification against the running Identity API. The catalog still uses fixtures. Public MCP search stays on public scope.
+
 ## Examples and source of truth
 
 ```sh
