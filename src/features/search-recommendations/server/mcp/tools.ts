@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { createOpenApiDocument } from "../../docs/openapi";
-import { endpointDefinitions } from "../../docs/registry";
+import { endpointDefinitions } from "../../docs/endpoints";
 import { apiOrigin, normalizeOrigin } from "../origin";
 
 // Derived from the public contract's parsed input shape: numbers here, decimal strings over HTTP.

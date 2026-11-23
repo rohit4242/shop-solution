@@ -3,7 +3,7 @@ import {
   names,
   type ModelProfile,
   type PlaygroundSettings,
-} from "../schemas/playground";
+} from "../../schemas/playground";
 import { Input } from "@/shared/components/ui/input";
 const control = "w-full rounded-md border bg-background p-2 text-sm";
 export function PlaygroundSettingsPanel({

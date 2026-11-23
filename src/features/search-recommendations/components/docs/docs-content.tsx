@@ -7,11 +7,12 @@ import {
   CardTitle,
   CardDescription,
 } from "@/shared/components/ui/card";
-import { endpointDefinitions, docsBase, isEndpointKey } from "../docs/registry";
+import { endpointDefinitions, isEndpointKey } from "../../docs/endpoints";
+import { docsBase } from "../../docs/navigation";
 import { CodeBlock, CodeExamples } from "./code-examples";
 import { RequestExplorer } from "./request-explorer";
-import { DiscoveryWorkbench } from "./discovery-workbench";
-import { displayOrigin } from "../server/origin";
+import { DiscoveryWorkbench } from "../discovery/discovery-workbench";
+import { displayOrigin } from "../../server/origin";
 // The deployed address on Vercel, localhost in development.
 const baseUrl = () => displayOrigin() ?? "http://localhost:3000";
 const json = (value: unknown) => JSON.stringify(value, null, 2);

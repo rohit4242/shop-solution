@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { docsBase, docPages } from "../docs/registry";
+import { docsBase, docPages } from "../../docs/navigation";
 import { DocsNavigation } from "./docs-navigation";
 export function DocsLayout({ children }: { children: React.ReactNode }) {
   return (

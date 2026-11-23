@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { endpointDefinitions, docPages } from "../docs/registry";
+import { endpointDefinitions } from "../docs/endpoints";
+import { docPages } from "../docs/navigation";
 import { createOpenApiDocument } from "../docs/openapi";
 import { createDiscoveryApi } from "../server/services/api";
 import {

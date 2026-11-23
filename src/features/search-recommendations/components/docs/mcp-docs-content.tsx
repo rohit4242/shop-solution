@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { displayMcpUrl, mcpPath } from "../server/origin";
+import { displayMcpUrl, mcpPath } from "../../server/origin";
 import { UseWithAiContent } from "./use-with-ai-content";
 const code =
   "overflow-auto rounded-lg border bg-muted/40 p-4 text-xs leading-6 whitespace-pre-wrap";

@@ -1,5 +1,9 @@
-import { agentBrief, agentSkill, mcpInstallSnippets } from "../docs/agent-kit";
-import { displayOrigin, mcpPath } from "../server/origin";
+import {
+  agentBrief,
+  agentSkill,
+  mcpInstallSnippets,
+} from "../../docs/agent-kit";
+import { displayOrigin, mcpPath } from "../../server/origin";
 import { CodeBlock, CodeExamples } from "./code-examples";
 
 const docsBase = "/docs/search-recommendations";
