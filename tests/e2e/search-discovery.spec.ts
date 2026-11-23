@@ -278,7 +278,7 @@ test("the Admin & Identity handoff links to its UI and API docs", async ({
   ).toHaveAttribute("href", "http://localhost:3000/admin/codes");
 });
 
-test("the project docs navigation exposes Discovery and Admin & Identity", async ({
+test("the project docs hub links to deployed workspaces and published team docs", async ({
   page,
 }) => {
   await page.goto("/docs");
@@ -286,9 +286,31 @@ test("the project docs navigation exposes Discovery and Admin & Identity", async
   await expect(
     page.getByRole("link", { name: "Discovery workbench" }),
   ).toHaveAttribute("href", "/docs/search-recommendations/discover");
+  const admin = page.locator("#team-admin-identity");
   await expect(
-    page.getByRole("link", { name: "Admin & Identity UI" }),
-  ).toHaveAttribute("href", "http://localhost:5500/");
+    admin.getByRole("link", { name: "Moderation flow draft" }),
+  ).toHaveAttribute(
+    "href",
+    "https://github.com/rohit4242/shop-solution/blob/main/docs/search-recommendations/exercises/cross-module-flow/flow.md",
+  );
+  await expect(admin.locator('a[href*="localhost"]')).toHaveCount(0);
+
+  const logistics = page.locator("#team-logistics");
+  await expect(
+    logistics.getByRole("link", { name: "Logistics workspace" }),
+  ).toHaveAttribute("href", "/logistics");
+  await expect(
+    logistics.getByRole("link", { name: "OpenAPI contract" }),
+  ).toHaveAttribute(
+    "href",
+    "https://github.com/rohit4242/shop-solution/blob/main/src/features/logistics/api/openapi.yaml",
+  );
+  await expect(
+    logistics.getByRole("link", { name: "Exercise and MCP docs" }),
+  ).toHaveAttribute(
+    "href",
+    "https://github.com/rohit4242/shop-solution/tree/main/src/features/logistics/docs/session7",
+  );
 });
 
 test("completes search and recommendations using the keyboard only", async ({

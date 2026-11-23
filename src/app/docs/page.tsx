@@ -12,13 +12,14 @@ export const metadata = {
   description: "Documentation, APIs and agent tools from every team.",
 };
 
-const repo =
-  "https://github.com/rohit4242/shop-solution/tree/main/src/features";
+const repo = "https://github.com/rohit4242/shop-solution";
+const featureTree = `${repo}/tree/main/src/features`;
 
 // Teams add their links here once they publish docs.
 const teams: {
   slug: string;
   name: string;
+  description?: string;
   links?: { label: string; href: string }[];
 }[] = [
   {
@@ -45,20 +46,32 @@ const teams: {
   {
     slug: "admin-identity",
     name: "Admin & Identity",
+    description: "Integration docs and local demo setup",
     links: [
       {
-        label: "Admin & Identity UI",
-        href: "http://localhost:5500/",
-      },
-      {
-        label: "API docs",
-        href: "http://localhost:8000/docs",
+        label: "Moderation flow draft",
+        href: `${repo}/blob/main/docs/search-recommendations/exercises/cross-module-flow/flow.md`,
       },
     ],
   },
   { slug: "analytics-reporting", name: "Analytics & Reporting" },
   { slug: "crm", name: "CRM" },
-  { slug: "logistics", name: "Logistics" },
+  {
+    slug: "logistics",
+    name: "Logistics",
+    description: "Workspace, API contract and exercise docs",
+    links: [
+      { label: "Logistics workspace", href: "/logistics" },
+      {
+        label: "OpenAPI contract",
+        href: `${repo}/blob/main/src/features/logistics/api/openapi.yaml`,
+      },
+      {
+        label: "Exercise and MCP docs",
+        href: `${featureTree}/logistics/docs/session7`,
+      },
+    ],
+  },
   { slug: "marketing", name: "Marketing" },
   { slug: "marketplace", name: "Marketplace" },
   { slug: "reviews-ratings", name: "Reviews & Ratings" },
@@ -87,7 +100,8 @@ export default function DocsHub() {
             <CardHeader>
               <CardTitle>{team.name}</CardTitle>
               <CardDescription>
-                {team.links ? "Live docs" : "No published docs yet"}
+                {team.description ??
+                  (team.links ? "Live docs" : "No published docs yet")}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -104,7 +118,7 @@ export default function DocsHub() {
                 ))}
                 <li>
                   <a
-                    href={`${repo}/${team.slug}`}
+                    href={`${featureTree}/${team.slug}`}
                     className="text-zinc-500 underline underline-offset-4"
                   >
                     Feature README on GitHub ↗
