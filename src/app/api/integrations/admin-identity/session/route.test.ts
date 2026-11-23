@@ -20,9 +20,29 @@ function request(cookie?: string) {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe("Admin & Identity session integration", () => {
+  it.each([
+    [" ", "http://localhost:8000/auth/session"],
+    [
+      "https://identity.example.test",
+      "https://identity.example.test/auth/session",
+    ],
+  ])("resolves the Identity API URL from %j", async (base, expected) => {
+    vi.stubEnv("ADMIN_IDENTITY_API_URL", base);
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 401 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await GET(request("erp_access_token=shared-token"));
+    expect(fetchMock).toHaveBeenCalledWith(
+      new URL(expected),
+      expect.any(Object),
+    );
+  });
+
   it("returns anonymous without calling Identity when the shared cookie is absent", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

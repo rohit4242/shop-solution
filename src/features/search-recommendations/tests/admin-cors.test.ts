@@ -53,6 +53,49 @@ describe("local Admin moderation CORS", () => {
     }
   });
 
+  it("uses the configured origin for both the preflight and the response", async () => {
+    vi.stubEnv("SEARCH_ENABLE_LOCAL_ADMIN_CORS", "true");
+    const origin = "https://admin.example.test";
+    vi.stubEnv("SEARCH_ADMIN_UI_ORIGIN", origin + "/");
+    const preflight = route.OPTIONS(
+      new Request(url, {
+        method: "OPTIONS",
+        headers: { Origin: origin, "Access-Control-Request-Method": "GET" },
+      }),
+    );
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("access-control-allow-origin")).toBe(origin);
+    const response = await route.GET(
+      new Request(url, { headers: { Origin: origin } }),
+    );
+    expect(response.headers.get("access-control-allow-origin")).toBe(origin);
+    const local = await route.GET(
+      new Request(url, { headers: { Origin: admin } }),
+    );
+    expect(local.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it.each(["*", "null", "https://admin.example.test/path"])(
+    "rejects invalid Admin origin configuration %s",
+    async (value) => {
+      vi.stubEnv("SEARCH_ENABLE_LOCAL_ADMIN_CORS", "true");
+      vi.stubEnv("SEARCH_ADMIN_UI_ORIGIN", value);
+      const response = await route.GET(
+        new Request(url, { headers: { Origin: admin } }),
+      );
+      expect(response.headers.get("access-control-allow-origin")).toBeNull();
+    },
+  );
+
+  it("falls back to localhost for a blank Admin origin", async () => {
+    vi.stubEnv("SEARCH_ENABLE_LOCAL_ADMIN_CORS", "true");
+    vi.stubEnv("SEARCH_ADMIN_UI_ORIGIN", " ");
+    const response = await route.GET(
+      new Request(url, { headers: { Origin: admin } }),
+    );
+    expect(response.headers.get("access-control-allow-origin")).toBe(admin);
+  });
+
   it("allows a GET preflight with Content-Type and rejects unsupported methods or headers", async () => {
     vi.stubEnv("SEARCH_ENABLE_LOCAL_ADMIN_CORS", "true");
     for (const [method, header, status] of [

@@ -1,24 +1,31 @@
 import { handleDiscoveryRequest } from "@/features/search-recommendations/server";
 
 export const dynamic = "force-dynamic";
-const adminOrigin = "http://localhost:8000";
-
-function allowsAdminOrigin(request: Request) {
-  return (
-    process.env.SEARCH_ENABLE_LOCAL_ADMIN_CORS === "true" &&
-    request.headers.get("Origin") === adminOrigin
+function allowedAdminOrigin(request: Request) {
+  if (process.env.SEARCH_ENABLE_LOCAL_ADMIN_CORS !== "true") return;
+  const url = URL.parse(
+    process.env.SEARCH_ADMIN_UI_ORIGIN?.trim() || "http://localhost:8000",
   );
+  if (
+    url &&
+    (url.protocol === "https:" || url.protocol === "http:") &&
+    url.href === `${url.origin}/` &&
+    request.headers.get("Origin") === url.origin
+  ) {
+    return url.origin;
+  }
 }
 
-function addAdminHeaders(headers: Headers) {
-  headers.set("Access-Control-Allow-Origin", adminOrigin);
+function addAdminHeaders(headers: Headers, origin: string) {
+  headers.set("Access-Control-Allow-Origin", origin);
   headers.set("Access-Control-Allow-Credentials", "true");
 }
 
 export async function GET(request: Request) {
   const response = await handleDiscoveryRequest("search", request);
   response.headers.append("Vary", "Origin");
-  if (allowsAdminOrigin(request)) addAdminHeaders(response.headers);
+  const origin = allowedAdminOrigin(request);
+  if (origin) addAdminHeaders(response.headers, origin);
   return response;
 }
 
@@ -37,15 +44,16 @@ export function OPTIONS(request: Request) {
     .split(",")
     .map((name) => name.trim().toLowerCase())
     .filter(Boolean);
+  const origin = allowedAdminOrigin(request);
   if (
-    !allowsAdminOrigin(request) ||
+    !origin ||
     method !== "GET" ||
     requestedHeaders.some((name) => name !== "content-type")
   ) {
     return new Response(null, { status: 403, headers });
   }
 
-  addAdminHeaders(headers);
+  addAdminHeaders(headers, origin);
   headers.set("Access-Control-Allow-Methods", "GET");
   headers.set("Access-Control-Allow-Headers", "Content-Type");
   return new Response(null, { status: 204, headers });
