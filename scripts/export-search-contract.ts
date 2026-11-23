@@ -42,6 +42,7 @@ if (process.argv.includes("--check")) {
     await format(stringify(document), { parser: "yaml" }),
   );
   for (const path of skillPaths) {
+    if (read(path) === skill) continue;
     mkdirSync(dirname(path), { recursive: true });
     writeFileSync(path, skill);
   }

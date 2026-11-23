@@ -1,4 +1,5 @@
 import "server-only";
+import { checkIdentityPermission } from "@/features/admin-identity/server";
 import { randomUUID } from "node:crypto";
 import { endpointDefinitions } from "../../docs/registry";
 import { ZodError } from "zod";
@@ -17,11 +18,33 @@ import {
   mockOfferSource,
   mockPurchaseSource,
 } from "../repositories/mock-sources";
-import { search, facets, autocomplete } from "./discovery";
+import { search, facets, autocomplete, publicItem } from "./discovery";
 import { similar, alsoBought, sourceProduct } from "./recommendations";
 import { DiscoveryError } from "./errors";
 export type Operation =
   "search" | "facets" | "autocomplete" | "similar" | "also-bought";
+const moderationFailures = {
+  unauthenticated: new DiscoveryError(
+    "UNAUTHENTICATED",
+    401,
+    "Sign in to use moderation search.",
+  ),
+  forbidden: new DiscoveryError(
+    "FORBIDDEN",
+    403,
+    "Offer moderation permission is required.",
+  ),
+  unavailable: new DiscoveryError(
+    "IDENTITY_UNAVAILABLE",
+    503,
+    "Could not check offer moderation permission.",
+  ),
+  invalid: new DiscoveryError(
+    "IDENTITY_INVALID_RESPONSE",
+    502,
+    "Identity rejected the permission check unexpectedly.",
+  ),
+};
 export function createDiscoveryApi(
   offers: OfferSource,
   purchases: PurchaseSource,
@@ -48,17 +71,29 @@ export function createDiscoveryApi(
       let data: unknown;
       if (operation === "search") {
         const q = searchQuerySchema.parse(params);
-        data = search(await catalog(), q);
+        if (q.scope === "moderation") {
+          const permission = await checkIdentityPermission(
+            request,
+            "offers:approve",
+          );
+          if (permission !== "allowed") throw moderationFailures[permission];
+          data = search((await catalog()).moderation, q, (offer) => ({
+            ...publicItem(offer),
+            status: offer.status,
+          }));
+        } else {
+          data = search((await catalog()).public, q, publicItem);
+        }
       } else if (operation === "facets") {
         const q = facetsQuerySchema.parse(params);
-        data = facets(await catalog(), q);
+        data = facets((await catalog()).public, q);
       } else if (operation === "autocomplete") {
         const q = autocompleteQuerySchema.parse(params);
-        data = autocomplete(await catalog(), q);
+        data = autocomplete((await catalog()).public, q);
       } else {
         const q = recommendationQuerySchema.parse(params),
-          snapshot = await catalog();
-        sourceProduct(snapshot, q.productId);
+          snapshot = (await catalog()).public;
+        if (operation === "also-bought") sourceProduct(snapshot, q.productId);
         data =
           operation === "similar"
             ? similar(snapshot, q)
@@ -90,6 +125,9 @@ export function createDiscoveryApi(
       const allowed = new Set(
         endpointDefinitions[operation].parameters.map((p) => p.name),
       );
+      const moderation =
+        operation === "search" &&
+        url.searchParams.getAll("scope").includes("moderation");
       console.info(
         JSON.stringify({
           type: "discovery-request",
@@ -97,9 +135,11 @@ export function createDiscoveryApi(
           operation,
           method: request.method,
           path: url.pathname,
-          query: Object.fromEntries(
-            [...url.searchParams].filter(([key]) => allowed.has(key)),
-          ),
+          query: moderation
+            ? { scope: "moderation" }
+            : Object.fromEntries(
+                [...url.searchParams].filter(([key]) => allowed.has(key)),
+              ),
           status,
           durationMs: Math.round(performance.now() - started),
         }),

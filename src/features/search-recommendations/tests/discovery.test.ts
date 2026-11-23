@@ -218,7 +218,7 @@ describe("snapshot integrity", () => {
       b = load();
     expect(a).toBe(b);
     await expect(a).rejects.toThrow("Catalog data");
-    const snapshot = await load();
+    const { public: snapshot } = await load();
     await load();
     expect(loadOffers).toHaveBeenCalledTimes(2);
     expect(Object.isFrozen(snapshot.offers)).toBe(true);

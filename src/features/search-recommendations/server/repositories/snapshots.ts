@@ -23,21 +23,25 @@ function lazySnapshot<T>(
   };
 }
 export function createCatalogLoader(source: OfferSource) {
-  return lazySnapshot<CatalogSnapshot>(
+  return lazySnapshot<{ public: CatalogSnapshot; moderation: CatalogSnapshot }>(
     async () => {
-      const offers = catalogSchema.parse(await source.loadOffers());
+      const offers = catalogSchema
+        .parse(await source.loadOffers())
+        .filter((offer) => offer.status !== "removed")
+        .map((offer) =>
+          Object.freeze({
+            ...offer,
+            attributes: Object.freeze(offer.attributes),
+            imageUrls: Object.freeze(offer.imageUrls),
+          }),
+        );
       return Object.freeze({
-        offers: Object.freeze(
-          offers
-            .filter((o) => o.status === "active")
-            .map((o) =>
-              Object.freeze({
-                ...o,
-                attributes: Object.freeze(o.attributes),
-                imageUrls: Object.freeze(o.imageUrls),
-              }),
-            ),
-        ),
+        public: Object.freeze({
+          offers: Object.freeze(
+            offers.filter((offer) => offer.status === "active"),
+          ),
+        }),
+        moderation: Object.freeze({ offers: Object.freeze(offers) }),
       });
     },
     "CATALOG_UNAVAILABLE",

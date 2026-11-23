@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import type {
   searchResponseSchema,
+  moderationSearchResponseSchema,
   facetsResponseSchema,
   autocompleteResponseSchema,
   recommendationsResponseSchema,
@@ -11,6 +12,9 @@ import type {
   recommendationQuerySchema,
 } from "../schemas/contracts";
 export type SearchResponse = z.infer<typeof searchResponseSchema>;
+export type ModerationSearchResponse = z.infer<
+  typeof moderationSearchResponseSchema
+>;
 export type FacetsResponse = z.infer<typeof facetsResponseSchema>;
 export type AutocompleteResponse = z.infer<typeof autocompleteResponseSchema>;
 export type RecommendationsResponse = z.infer<
