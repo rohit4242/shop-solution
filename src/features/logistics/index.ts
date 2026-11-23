@@ -1,2 +1,1 @@
-// Export client-safe public APIs here when implemented.
-export {};
+export { LogisticsWorkspace } from "./components/logistics-workspace";

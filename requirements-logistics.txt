@@ -1,0 +1,13 @@
+# Logistics runtime and verification.
+fastapi==0.162.2
+uvicorn==0.54.0
+pydantic==2.14.3
+PyYAML==6.0.3
+httpx==0.28.1
+pytest==9.2.0
+jsonschema==4.26.0
+openapi-spec-validator==0.9.0
+playwright==1.62.0
+pytest-playwright==0.8.0
+mcp[cli]==1.30.0
+openai==3.48.0

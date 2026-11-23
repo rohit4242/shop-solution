@@ -1,0 +1,3 @@
+[logistics-api] POST /shipments -> 201
+[logistics-api] GET /shipments/S-2001 -> 200
+[logistics-api] GET /shipments/S-2001 -> 200

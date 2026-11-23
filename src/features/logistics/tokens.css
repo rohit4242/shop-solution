@@ -1,0 +1,24 @@
+.logistics-module {
+  --logistics-space-1: 8px;
+  --logistics-space-2: 16px;
+  --logistics-space-3: 24px;
+  --logistics-space-4: 32px;
+  --logistics-radius: 6px;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+.logistics-module a {
+  text-underline-offset: 3px;
+}
+.logistics-module :focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 3px;
+}
+.logistics-module select {
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: var(--logistics-radius);
+  background: var(--card);
+  padding: var(--logistics-space-1);
+  width: 100%;
+}

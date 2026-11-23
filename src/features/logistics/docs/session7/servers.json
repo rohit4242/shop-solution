@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "logistics": {
+      "module": "logistics",
+      "args": ["src/features/logistics/api/mcp_server.py"],
+      "env": { "LOGISTICS_API_BASE_URL": "http://localhost:8000" }
+    },
+    "logistics_ro": {
+      "module": "logistics",
+      "args": ["src/features/logistics/api/mcp_server.py", "--read-only"],
+      "env": { "LOGISTICS_API_BASE_URL": "http://localhost:8000" }
+    }
+  }
+}

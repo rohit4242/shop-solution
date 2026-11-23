@@ -1,0 +1,563 @@
+openapi: 3.1.0
+info:
+  title: Logistics API
+  version: 1.3.0
+  summary: Shipments and delivery status for the shop ERP.
+  description: |
+    Logistics turns paid orders into shipments and tracks them until delivery, return or cancellation.
+    Other modules (Storefront, Accounting) read shipments and delivery status through this API.
+
+    Status: 1.0.0 is the version Storefront, Accounting and Logistics agreed in the
+    "Order to Shipment" flow (session 7, see docs/session7/flow.md). 1.1.0 adds the optional
+    `paymentReference` that Accounting sends with a paid order. 1.2.0 adds `listShippingMethods`
+    (`GET /shipping/methods`) for Storefront's checkout. 1.3.0 also accepts order ids like
+    `ORD-100001` (Accounting's format). Additions only, no breaking change.
+    Changelog: CONTRACT_REVIEW.md.
+
+    Identifiers: an order id looks like `O-1001` (Storefront) or `M-2001` (Marketplace), a shipment id like `S-2001`.
+    They are different things. Never use an order id where a shipment id is expected.
+    `trackingNumber` is a carrier reference, not an ERP shipment id.
+
+    Errors always have the shape `{"error": {"code": "...", "message": "..."}}`.
+servers:
+  - url: http://localhost:8000
+    description: Local development
+tags:
+  - name: shipments
+    description: Create, read and update shipments.
+  - name: shipping
+    description: Delivery options offered at checkout.
+paths:
+  /shipping/methods:
+    get:
+      operationId: listShippingMethods
+      tags: [shipping]
+      summary: List the available shipping methods
+      description: |
+        Added in 1.2.0. Use at checkout to show the customer the delivery options with carrier,
+        delivery time and price. The `code` of the chosen option is the `shippingMethod` value
+        to send later in `createShipment`. Prices are in minor units (499 = 4.99 EUR).
+      security: []
+      responses:
+        "200":
+          description: All shipping methods that can be chosen now.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShippingMethodList"
+        "422":
+          description: The request had query parameters; this operation takes none (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /shipments:
+    post:
+      operationId: createShipment
+      tags: [shipments]
+      summary: Create a shipment for a paid order
+      description: |
+        Use when an order is paid and ready to ship. Creates one shipment with status CREATED.
+        Logistics assigns the carrier and the tracking number. An order can have only one shipment.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderReadyForShipping"
+            example:
+              orderId: O-1001
+              customerId: C-501
+              paymentStatus: PAID
+              shippingAddress:
+                recipientName: Erika Mustermann
+                street: Hauptstrasse 1
+                postalCode: "94469"
+                city: Deggendorf
+                country: DE
+              shippingMethod: STANDARD
+      responses:
+        "201":
+          description: Shipment created with status CREATED.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shipment"
+        "409":
+          description: The order already has a shipment (code ORDER_ALREADY_HAS_SHIPMENT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: The request body is invalid, for example paymentStatus is not PAID (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    get:
+      operationId: listShipments
+      tags: [shipments]
+      summary: List shipments, optionally filtered
+      description: |
+        Use to find shipments, for example all shipments of one order (`orderId`), of one customer (`customerId`) or all with one status.
+        Returns one page, newest shipment id last. Without filters it returns every shipment.
+      parameters:
+        - name: orderId
+          in: query
+          required: false
+          description: Only shipments of this order. Example O-1001.
+          schema:
+            $ref: "#/components/schemas/OrderId"
+        - name: customerId
+          in: query
+          required: false
+          description: Only shipments of this customer. Use it to show a customer the delivery status of all their orders. Example C-501.
+          schema:
+            type: string
+            minLength: 1
+        - name: status
+          in: query
+          required: false
+          description: Only shipments with this status.
+          schema:
+            $ref: "#/components/schemas/ShipmentStatus"
+        - name: page
+          in: query
+          required: false
+          description: Page number, starting at 1.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          required: false
+          description: Items per page, 1 to 100.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        "200":
+          description: A page of shipments.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentList"
+        "422":
+          description: A filter value is invalid, for example an unknown status (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /shipments/{shipmentId}:
+    get:
+      operationId: getShipment
+      tags: [shipments]
+      summary: Get one shipment
+      description: |
+        Use when you know the shipment id (format S-2001). Returns the current status,
+        the carrier, the tracking number and how many delivery attempts have failed.
+      parameters:
+        - $ref: "#/components/parameters/ShipmentIdPath"
+      responses:
+        "200":
+          description: The shipment.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Shipment"
+        "404":
+          description: No shipment with this id (code SHIPMENT_NOT_FOUND).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: The id does not match the format S-1234 (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /shipments/{shipmentId}/status-updates:
+    post:
+      operationId: applyStatusUpdate
+      tags: [shipments]
+      summary: Apply a carrier status update to a shipment
+      description: |
+        Use when the carrier reports a new status. Only direct transitions are allowed:
+        CREATED to LABEL_CREATED or CANCELLED; LABEL_CREATED to IN_TRANSIT or CANCELLED;
+        IN_TRANSIT to OUT_FOR_DELIVERY; OUT_FOR_DELIVERY to DELIVERED or DELIVERY_FAILED;
+        DELIVERY_FAILED to OUT_FOR_DELIVERY, IN_TRANSIT or RETURNED.
+        DELIVERED, RETURNED and CANCELLED are final.
+        The third failed delivery moves the shipment to RETURNED automatically (two events).
+        Sending the same observation twice is safe: the second call changes nothing and returns no events.
+        An update older than the shipment's last update is rejected.
+      parameters:
+        - $ref: "#/components/parameters/ShipmentIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CarrierStatusUpdate"
+            example:
+              status: LABEL_CREATED
+              occurredAt: "2026-11-10T09:00:00.000Z"
+      responses:
+        "200":
+          description: |
+            The update was applied, or it was a repeat of the last observation (then `events` is empty).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusUpdateResult"
+        "404":
+          description: No shipment with this id (code SHIPMENT_NOT_FOUND).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: |
+            The transition is not allowed (code INVALID_TRANSITION) or the update is older
+            than the last one (code STALE_EVENT).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: |
+            The body is invalid, for example `occurredAt` is not a UTC timestamp like
+            2026-11-10T09:00:00.000Z (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /shipments/{shipmentId}/events:
+    get:
+      operationId: getShipmentEvents
+      tags: [shipments]
+      summary: List the status-change events of a shipment
+      description: |
+        Use to see the history of a shipment, oldest first. Each event is a ShipmentStatusChanged,
+        the message Logistics sends to Accounting and Storefront.
+      parameters:
+        - $ref: "#/components/parameters/ShipmentIdPath"
+      responses:
+        "200":
+          description: The events, oldest first. Empty for a shipment that has not changed yet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShipmentEventList"
+        "404":
+          description: No shipment with this id (code SHIPMENT_NOT_FOUND).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: The id does not match the format S-1234 (code VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  parameters:
+    ShipmentIdPath:
+      name: shipmentId
+      in: path
+      required: true
+      description: Shipment id, format S- followed by at least 4 digits. Example S-2001.
+      schema:
+        $ref: "#/components/schemas/ShipmentId"
+  schemas:
+    OrderId:
+      type: string
+      pattern: "^(O|M|ORD)-[0-9]+$"
+      description: Order id from the Storefront (O- and digits, example O-1001), sale id from the Marketplace (M- and digits, example M-2001), or order id in Accounting's format (ORD- and digits, example ORD-100001, accepted since 1.3.0).
+      examples: [O-1001, M-2001, ORD-100001]
+    ShipmentId:
+      type: string
+      pattern: "^S-[0-9]{4,}$"
+      description: Shipment id. Example S-2001. Not the same as an order id.
+      examples: [S-2001]
+    Timestamp:
+      type: string
+      pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$'
+      description: UTC time with milliseconds and a trailing Z.
+      examples: ["2026-11-10T09:00:00.000Z"]
+    ShipmentStatus:
+      type: string
+      enum:
+        - CREATED
+        - LABEL_CREATED
+        - IN_TRANSIT
+        - OUT_FOR_DELIVERY
+        - DELIVERED
+        - DELIVERY_FAILED
+        - RETURNED
+        - CANCELLED
+      description: Shipment status. DELIVERED, RETURNED and CANCELLED are final.
+    ShippingMethod:
+      type: string
+      enum: [STANDARD, EXPRESS]
+    ShippingAddress:
+      type: object
+      additionalProperties: false
+      required: [recipientName, street, postalCode, city, country]
+      properties:
+        recipientName:
+          type: string
+          minLength: 1
+        street:
+          type: string
+          minLength: 1
+        postalCode:
+          type: string
+          minLength: 1
+        city:
+          type: string
+          minLength: 1
+        country:
+          type: string
+          pattern: "^[A-Z]{2}$"
+          description: ISO 3166-1 alpha-2 code, for example DE.
+    OrderReadyForShipping:
+      type: object
+      description: Inbound message from the order and accounting boundary (proposal, not yet approved).
+      additionalProperties: false
+      required:
+        [orderId, customerId, paymentStatus, shippingAddress, shippingMethod]
+      properties:
+        orderId:
+          $ref: "#/components/schemas/OrderId"
+        customerId:
+          type: string
+          minLength: 1
+          description: Customer id as defined by the CRM team. Logistics treats it as opaque.
+        paymentStatus:
+          type: string
+          enum: [PAID]
+          description: Belongs to the order. Only paid orders can be shipped.
+        shippingAddress:
+          $ref: "#/components/schemas/ShippingAddress"
+        shippingMethod:
+          $ref: "#/components/schemas/ShippingMethod"
+        paymentReference:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: "^[A-Za-z0-9-]+$"
+          description: Optional (added in 1.1.0). Accounting's reference for the confirmed payment, for example PAY-1. Logistics stores it and returns it on the shipment; it does not check it.
+    Shipment:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          shipmentId,
+          orderId,
+          customerId,
+          carrierCode,
+          trackingNumber,
+          shippingMethod,
+          status,
+          updatedAt,
+          failedAttempts,
+        ]
+      properties:
+        shipmentId:
+          $ref: "#/components/schemas/ShipmentId"
+        orderId:
+          $ref: "#/components/schemas/OrderId"
+        customerId:
+          type: string
+          description: Customer who owns the order, copied from the order. Opaque to Logistics.
+        carrierCode:
+          type: string
+          description: Carrier chosen by Logistics, for example DHL (STANDARD) or UPS (EXPRESS). Assumption, see CONTRACT_REVIEW.md.
+        trackingNumber:
+          type: string
+          description: Carrier reference. Not an ERP shipment id.
+        shippingMethod:
+          $ref: "#/components/schemas/ShippingMethod"
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        updatedAt:
+          $ref: "#/components/schemas/Timestamp"
+        failedAttempts:
+          type: integer
+          minimum: 0
+          maximum: 3
+          description: Number of failed delivery attempts. At 3 the shipment is returned automatically.
+        paymentReference:
+          type: string
+          description: Optional (added in 1.1.0). Accounting's payment reference, copied from the order. Present only if Accounting sent one.
+    CarrierStatusUpdate:
+      type: object
+      additionalProperties: false
+      required: [status, occurredAt]
+      properties:
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        occurredAt:
+          $ref: "#/components/schemas/Timestamp"
+    ShipmentStatusChanged:
+      type: object
+      description: Outbound event to Accounting and Storefront (proposal, not yet approved).
+      additionalProperties: false
+      required:
+        [
+          shipmentId,
+          orderId,
+          carrierCode,
+          trackingNumber,
+          previousStatus,
+          status,
+          updatedAt,
+        ]
+      properties:
+        shipmentId:
+          $ref: "#/components/schemas/ShipmentId"
+        orderId:
+          $ref: "#/components/schemas/OrderId"
+        carrierCode:
+          type: string
+        trackingNumber:
+          type: string
+        previousStatus:
+          $ref: "#/components/schemas/ShipmentStatus"
+        status:
+          $ref: "#/components/schemas/ShipmentStatus"
+        updatedAt:
+          $ref: "#/components/schemas/Timestamp"
+        attemptCount:
+          type: integer
+          minimum: 0
+          maximum: 3
+          x-proposal: true
+          description: Failed delivery attempts at this moment. Proposal for Storefront ("Attempt 2 of 3"); needs approval.
+    StatusUpdateResult:
+      type: object
+      additionalProperties: false
+      required: [shipment, events]
+      properties:
+        shipment:
+          $ref: "#/components/schemas/Shipment"
+        events:
+          type: array
+          description: New events, oldest first. Empty when the update was a repeat. Two events when the third failure triggers the automatic return.
+          items:
+            $ref: "#/components/schemas/ShipmentStatusChanged"
+    ShipmentEventList:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShipmentStatusChanged"
+    Pagination:
+      type: object
+      additionalProperties: false
+      required: [page, pageSize, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+    Money:
+      type: object
+      additionalProperties: false
+      required: [amountMinor, currency]
+      properties:
+        amountMinor:
+          type: integer
+          minimum: 0
+          description: Amount in minor units, e.g. 499 for 4.99 EUR.
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          description: ISO 4217 code, e.g. EUR.
+    ShippingMethodOption:
+      type: object
+      additionalProperties: false
+      required:
+        [code, carrierCode, name, description, estimatedDeliveryDays, price]
+      properties:
+        code:
+          $ref: "#/components/schemas/ShippingMethod"
+        carrierCode:
+          type: string
+          description: Carrier that will deliver, e.g. DHL. The shipment gets the same carrier.
+        name:
+          type: string
+          description: Short label for the checkout, e.g. "Standard delivery".
+        description:
+          type: string
+        estimatedDeliveryDays:
+          type: object
+          additionalProperties: false
+          required: [min, max]
+          properties:
+            min:
+              type: integer
+              minimum: 0
+            max:
+              type: integer
+              minimum: 0
+        price:
+          $ref: "#/components/schemas/Money"
+    ShippingMethodList:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShippingMethodOption"
+    ShipmentList:
+      type: object
+      additionalProperties: false
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Shipment"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum:
+                - VALIDATION_ERROR
+                - SHIPMENT_NOT_FOUND
+                - ORDER_ALREADY_HAS_SHIPMENT
+                - INVALID_TRANSITION
+                - STALE_EVENT
+                - NOT_FOUND
+                - METHOD_NOT_ALLOWED
+                - HTTP_ERROR
+                - INTERNAL_ERROR
+            message:
+              type: string
+              description: Short readable explanation.
