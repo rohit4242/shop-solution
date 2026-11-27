@@ -58,3 +58,112 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+// ---------------------------------------------------------------------------
+// Marketing (src/features/marketing). Marketing is the only writer of these tables.
+// Orders, products and customers belong to other modules: we store their IDs, never copies.
+// Money is a decimal with 2 places plus a currency (see the marketing README, "Money").
+// ---------------------------------------------------------------------------
+
+enum MarketingDiscountType {
+  percent
+  fixed
+  free_shipping
+  @@map("marketing_discount_type")
+}
+
+enum MarketingRecordStatus {
+  active
+  reversed
+  @@map("marketing_record_status")
+}
+
+enum MarketingDiscountSource {
+  code
+  promotion
+  @@map("marketing_discount_source")
+}
+
+/// Applies automatically at checkout, without a code (story step j).
+model MarketingPromotion {
+  id          String                @id @default(uuid()) @db.Uuid
+  name        String
+  description String
+  type        MarketingDiscountType
+  value       Decimal               @db.Decimal(10, 2)
+  /// Scope: both empty = whole cart; else a line matches by productId or categoryId.
+  productIds  String[]              @default([])
+  categoryIds String[]              @default([])
+  validFrom   DateTime
+  validTo     DateTime?
+  active      Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  @@index([active, validFrom])
+  @@map("marketing_promotion")
+}
+
+/// A code the customer types at checkout. Stored uppercase, so `code` is unique case-insensitively.
+model MarketingDiscountCode {
+  id                 String                @id @default(uuid()) @db.Uuid
+  code               String                @unique
+  type               MarketingDiscountType
+  value              Decimal               @db.Decimal(10, 2)
+  currency           String                @default("EUR")
+  validFrom          DateTime
+  validTo            DateTime?
+  maxUses            Int?
+  maxUsesPerCustomer Int?
+  minOrderTotal      Decimal?              @db.Decimal(10, 2)
+  active             Boolean               @default(true)
+  campaignId         String?               @db.Uuid
+  productIds         String[]              @default([])
+  categoryIds        String[]              @default([])
+  redemptions        MarketingRedemption[]
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  @@map("marketing_discount_code")
+}
+
+/// One use of a code on an order; counts toward the code's usage limits.
+model MarketingRedemption {
+  id            String                @id @default(uuid()) @db.Uuid
+  codeId        String                @db.Uuid
+  code          MarketingDiscountCode @relation(fields: [codeId], references: [id])
+  orderId       String
+  customerId    String?
+  discountTotal Decimal               @db.Decimal(10, 2)
+  status        MarketingRecordStatus @default(active)
+  createdAt     DateTime              @default(now())
+  @@unique([codeId, orderId])
+  @@map("marketing_redemption")
+}
+
+/// The discount applied to one order (code or promotion), per line. Written on order.placed;
+/// read by Accounting at GET /api/v1/marketing/orders/{orderId}/discounts (story steps k, o).
+model MarketingOrderDiscount {
+  id            String                  @id @default(uuid()) @db.Uuid
+  orderId       String                  @unique
+  appliedBy     MarketingDiscountSource
+  codeId        String?                 @db.Uuid
+  code          String?
+  promotionId   String?                 @db.Uuid
+  currency      String
+  discountTotal Decimal                 @db.Decimal(10, 2)
+  /// One entry per order line, in order: { productId, offerId, discount } with discount as a "2.50" string.
+  items         Json
+  createdAt     DateTime                @default(now())
+  @@map("marketing_order_discount")
+}
+
+/// Every event we received, stored as it came. A resent event has the same source + eventId.
+model MarketingReceivedEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  source     String
+  eventId    String
+  type       String
+  payload    Json
+  receivedAt DateTime @default(now())
+  @@unique([source, eventId])
+  @@map("marketing_received_event")
+}
