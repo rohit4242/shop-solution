@@ -29,10 +29,23 @@ const PAUSE_MS = Number(process.env.AGENT_PAUSE_MS ?? "4000"); // free Groq tier
 for (const name of ["OPENAI_API_KEY", "OPENAI_MODEL"]) {
   if (!process.env[name]) throw new Error(`Set ${name}. Never commit the key.`);
 }
+// Some providers (Groq) reject the model's own reasoning when it is sent back on the next turn.
+async function withoutReasoningEcho(url, init) {
+  if (init?.body && typeof init.body === "string") {
+    const body = JSON.parse(init.body);
+    for (const message of body.messages ?? []) {
+      delete message.reasoning_content;
+      delete message.reasoning;
+    }
+    init = { ...init, body: JSON.stringify(body) };
+  }
+  return fetch(url, init);
+}
 const provider = createOpenAICompatible({
   name: "agent-provider",
   baseURL: process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
   apiKey: process.env.OPENAI_API_KEY,
+  fetch: withoutReasoningEcho,
 });
 const model = provider.chatModel(process.env.OPENAI_MODEL);
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -168,14 +181,14 @@ const scenarios = {
       });
       if (res.status !== 201)
         throw new Error(`setup failed: HTTP ${res.status}`);
-      return { oldId: res.json.data.promotionId };
+      return { originalEnd: res.json.data.validTo };
     },
-    check: async (cookie, answer, { oldId }) => {
+    // Outcome checks only: the agent may update the 5 % promotion in place or replace it.
+    check: async (cookie, answer, { originalEnd }) => {
       const all = await allPromotions(cookie);
       const activeM1 = all.filter(
         (p) => p.active && p.productIds.includes("M1"),
       );
-      const old = all.find((p) => p.promotionId === oldId);
       const cart = await cartM1();
       return [
         [
@@ -190,10 +203,13 @@ const scenarios = {
           activeM1[0]?.type === "percent" && activeM1[0]?.value === 10,
           activeM1[0] && { type: activeM1[0].type, value: activeM1[0].value },
         ],
+        // Added after the first 10 runs: "raise it" keeps the period. A replacement without an end date
+        // runs forever, and the first version of these checks let that through.
         [
-          "the old 5 % promotion is no longer active",
-          old?.active === false,
-          old?.active,
+          "the 10 % promotion keeps the original end (31 Dec 2026)",
+          !!activeM1[0]?.validTo &&
+            Date.parse(activeM1[0].validTo) === Date.parse(originalEnd),
+          activeM1[0] && { validTo: activeM1[0].validTo, originalEnd },
         ],
         [
           "checkout gives exactly 5.99 off M1 at 59.90",
@@ -309,7 +325,9 @@ console.log(
   `\nModel: ${process.env.OPENAI_MODEL} via ${process.env.OPENAI_BASE_URL ?? "OpenAI"}`,
 );
 for (const id of [...new Set(records.map((r) => r.scenario))]) {
-  const runs = records.filter((r) => r.scenario === id);
+  const all = records.filter((r) => r.scenario === id);
+  const runs = all.filter((r) => !r.harnessError);
+  const errors = all.length - runs.length;
   const pass = runs.filter((r) => r.passed).length;
   const lied = runs.filter((r) => r.saidDoneButFailed).length;
   const tokens = runs.reduce(

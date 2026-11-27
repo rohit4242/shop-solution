@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { promotionCreateSchema } from "../../schemas/promotion.schema";
+import {
+  promotionCreateSchema,
+  promotionUpdateSchema,
+} from "../../schemas/promotion.schema";
 import { validateRequestSchema } from "../../schemas/validate.schema";
 import { getOrderDiscounts } from "../services/order-discount-service";
 import {
@@ -10,6 +13,7 @@ import {
   listPromotions,
   listPublicActivePromotions,
   PromotionNotFoundError,
+  updatePromotion,
 } from "../services/promotion-service";
 import { validateDiscount } from "../services/validate-service";
 
@@ -120,6 +124,38 @@ export const marketingTools = {
     run: (input: unknown) =>
       guarded(async () =>
         result(await createPromotion(promotionCreateSchema.parse(input))),
+      ),
+  },
+  // Added after the agent runs of 27 Nov: without it, "change the value" meant deactivate + create,
+  // and agents dropped the period (the new promotion had no end date). Updating keeps every unsent field.
+  update_promotion: {
+    description:
+      "Change an existing promotion in place by promotionId (from list_promotions). Send only the fields to change, e.g. " +
+      "{ promotionId, value: 10 }; every other field (period, products, name) stays as it is. Prefer this over creating a " +
+      "new promotion when the user asks to change, raise or extend one. Returns the updated promotion.",
+    schema: z.strictObject({
+      promotionId: z.uuid(),
+      name: z.string().min(1).max(100).optional(),
+      description: z.string().min(1).max(500).optional(),
+      type: z.enum(["percent", "fixed"]).optional(),
+      value: z.number().positive().optional(),
+      productIds: z.array(z.string().min(1)).max(100).optional(),
+      categoryIds: z.array(z.string().min(1)).max(100).optional(),
+      validFrom: z.string().optional().describe("ISO 8601 with offset"),
+      validTo: z.string().optional().describe("ISO 8601 with offset"),
+    }),
+    readOnly: false,
+    run: ({
+      promotionId,
+      ...patch
+    }: { promotionId: string } & Record<string, unknown>) =>
+      guarded(async () =>
+        result(
+          await updatePromotion(
+            promotionId,
+            promotionUpdateSchema.parse(patch),
+          ),
+        ),
       ),
   },
   deactivate_promotion: {
