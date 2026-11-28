@@ -1,0 +1,1930 @@
+# Generated from src/features/marketplace/api/openapi.ts. Do not edit by hand.
+# Regenerate: node --import tsx scripts/export-marketplace-contract.ts
+openapi: 3.1.0
+info:
+  title: Marketplace API
+  version: 3.0.0
+  summary:
+    Seller onboarding, listings with moderation, the public offer catalog,
+    and each shop's sales.
+  description: >-
+    Owned by the Marketplace team. Contract and rules:
+    `src/features/marketplace/README.md`.
+
+
+    - Success bodies are `{ "data": ... }`; failures are `{ "error": { code,
+    message, fieldErrors? } }`.
+
+    - Money is integer minor units, VAT included: `1999` = EUR 19.99. Only `EUR`
+    for now.
+
+    - Timestamps are ISO 8601 UTC. IDs are the canonical shop IDs (`cuid`).
+
+    - Reads and writes use the shared shop tables: `Seller`, `SellerMember`,
+    `Product`, `ProductVariant`, `Offer`, `OfferItem`, `InventoryBalance`,
+    `OfferImage` and, read-only, `Category` and `OrderLine`.
+
+    - An offer is public only when the offer, its shop and its product are
+    `active`.
+
+
+    In-app features call the same operations directly from
+    `@/features/marketplace/server`.
+
+
+    3.0.0 moves the 2.2.0 API (FastAPI) into the shared Next.js app on the
+    canonical shop schema:
+
+    routes under `/api/v1/marketplace`, the `{ data }` envelope, 400 instead of
+    422 for validation errors,
+
+    Better Auth sessions, canonical IDs without prefixes, `categorySlug` from
+    the shared catalog,
+
+    `items` (offer items) instead of `variations`, image keys instead of image
+    IDs, and sales derived
+
+    from order lines (`GET /sellers/{sellerId}/sales`). Marketplace no longer
+    records sales or
+
+    calls Accounting.
+servers:
+  - url: /api/v1/marketplace
+    description: This application
+tags:
+  - name: catalog
+    description: Public reads for Storefront and Search & Recommendations
+  - name: sellers
+    description: Shop onboarding and details
+  - name: listings
+    description: A seller's offers and images
+  - name: moderation
+    description: Approving shops and offers
+  - name: sales
+    description: A shop's purchased order lines
+paths:
+  /catalog/offers:
+    get:
+      tags:
+        - catalog
+      operationId: listCatalogOffers
+      summary: All public offers, paged (catalog feed)
+      description: >-
+        Every public offer, oldest change first (`updatedAt`, then `offerId`).
+
+
+        - **Full load:** call without `updatedSince`, then follow `nextCursor`
+        until it is null.
+
+        - **Changes only:** pass the largest `updatedAt` you have seen as
+        `updatedSince`.
+
+        - Offers that stop being public drop out of the feed; repeat a full load
+        from time to time.
+
+        - `nextCursor` is opaque: send it back unchanged with the same
+        `updatedSince`.
+      parameters:
+        - name: updatedSince
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+            pattern: ^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$
+        - name: limit
+          in: query
+          required: false
+          schema:
+            default: 100
+            type: integer
+            minimum: 1
+            maximum: 200
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+      responses:
+        "200":
+          description: One page of public offers.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/CatalogPage"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /categories:
+    get:
+      tags:
+        - catalog
+      operationId: listCategories
+      summary: Categories of the shared catalog
+      description:
+        Read-only. Marketplace does not create categories; `categorySlug`
+        in a listing must be one of these.
+      responses:
+        "200":
+          description: Categories by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Category"
+  /products/{productId}:
+    get:
+      tags:
+        - catalog
+      operationId: getProduct
+      summary: An active catalog product with its public offers
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,64}$
+          example: cm3k9x2ab0003qz8lh6j8k0m1
+      responses:
+        "200":
+          description: The product.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Product"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `PRODUCT_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /offers:
+    get:
+      tags:
+        - listings
+        - moderation
+      operationId: listOffers
+      summary: Offers in any status (own shop, or any shop for offer moderators)
+      description: A seller must pass their own `sellerId`. Offer moderators may
+        filter by `status` alone; `status=pending` is the moderation queue.
+      security: &a1
+        - session: []
+      parameters:
+        - name: sellerId
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,64}$
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - draft
+              - pending
+              - active
+              - rejected
+              - blocked
+              - removed
+      responses:
+        "200":
+          description: Offers, most recently changed first.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /offers/{offerId}:
+    get:
+      tags:
+        - catalog
+      operationId: getOffer
+      summary: A public offer
+      parameters:
+        - &a2
+          name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,64}$
+          example: cm3k9x2ab0002qz8l9c1d3f4g
+      responses:
+        "200":
+          description: The offer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `OFFER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags:
+        - listings
+      operationId: updateOffer
+      summary: Change an offer (owner only)
+      description:
+        "Send only the fields that change. Text, category, attributes,
+        images, which variations exist, their labels or images, and measurements
+        send an active offer back to review; price and stock do not. Any edit of
+        a rejected offer resubmits it. `variations` replaces the whole list:
+        keep `offerItemId` for existing rows; removed items are deactivated, not
+        deleted, so order history keeps them. `variations: []` turns variations
+        off and needs `priceMinor` and `stock`. Product facts can only change
+        while no other shop sells the product. Measurements can be cleared with
+        `null`."
+      security: *a1
+      parameters:
+        - *a2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOfferRequest"
+      responses:
+        "200":
+          description: The changed offer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `OFFER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description:
+            "A business rule refused the change. Codes: `OFFER_LOCKED`,
+            `SELLER_NOT_ALLOWED`, `PRODUCT_SHARED`, `STOCK_BELOW_HELD`,
+            `IMAGE_IN_USE`, `CONCURRENT_UPDATE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /offers/{offerId}/approve:
+    post:
+      tags:
+        - moderation
+      operationId: approveOffer
+      summary: Approve a pending offer
+      description: Permission `marketplace:moderate-offers`. Also activates the
+        offer's product when it is still `draft`.
+      security: *a1
+      parameters:
+        - *a2
+      responses:
+        "200":
+          description: The offer, now `active`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `OFFER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `INVALID_STATUS_CHANGE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /offers/{offerId}/reject:
+    post:
+      tags:
+        - moderation
+      operationId: rejectOffer
+      summary: Reject a pending offer with a reason the seller sees
+      description: Permission `marketplace:moderate-offers`.
+      security: *a1
+      parameters:
+        - *a2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectRequest"
+      responses:
+        "200":
+          description: The offer, now `rejected`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `OFFER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `INVALID_STATUS_CHANGE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers:
+    get:
+      tags:
+        - moderation
+      operationId: listSellers
+      summary: Shops with private details (moderation queue)
+      description: Permission `marketplace:verify-sellers`. Newest first.
+      security: *a1
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - pending
+              - active
+              - suspended
+              - terminated
+      responses:
+        "200":
+          description: Shops.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SellerAccount"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - sellers
+      operationId: registerSeller
+      summary: Open a shop for the signed-in user
+      description: The shop starts `pending`. The session user becomes its
+        `SellerMember` with role `owner`. One current shop per user.
+      security: *a1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterSellerRequest"
+      responses:
+        "201":
+          description: The new shop.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SellerAccount"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `SELLER_EXISTS`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/me:
+    get:
+      tags:
+        - sellers
+      operationId: getMyShop
+      summary: The signed-in user's shop
+      security: *a1
+      responses:
+        "200":
+          description: The current shop, or null.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/MyShop"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}:
+    get:
+      tags:
+        - catalog
+      operationId: getSeller
+      summary: A public (active) shop
+      parameters:
+        - &a3
+          name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,64}$
+          example: cm3k9x2ab0001qz8l4n7v5t2e
+      responses:
+        "200":
+          description: The shop.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Seller"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags:
+        - sellers
+      operationId: updateSeller
+      summary: Change shop details (owner only)
+      security: *a1
+      parameters:
+        - *a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSellerRequest"
+      responses:
+        "200":
+          description: The changed shop.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SellerAccount"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `SELLER_NOT_ALLOWED`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}/approve:
+    post:
+      tags:
+        - moderation
+      operationId: approveSeller
+      summary: Approve a pending shop
+      description: Permission `marketplace:verify-sellers`.
+      security: *a1
+      parameters:
+        - *a3
+      responses:
+        "200":
+          description: The shop, now `active`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SellerAccount"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `INVALID_STATUS_CHANGE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}/reject:
+    post:
+      tags:
+        - moderation
+      operationId: rejectSeller
+      summary: Reject a pending shop with a reason
+      description: Permission `marketplace:verify-sellers`. The shop becomes `terminated`.
+      security: *a1
+      parameters:
+        - *a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectRequest"
+      responses:
+        "200":
+          description: The shop, now `terminated`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/SellerAccount"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `INVALID_STATUS_CHANGE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}/offers:
+    get:
+      tags:
+        - catalog
+      operationId: listSellerOffers
+      summary: Public offers of one active shop
+      parameters:
+        - *a3
+      responses:
+        "200":
+          description: Public offers by name.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      tags:
+        - listings
+      operationId: createOffer
+      summary: List a new product (owner only)
+      description:
+        Upload the images first (`uploadListingImage`). Creates a `draft`
+        catalog product with its variants, the shop's `pending` offer, one offer
+        item and stock balance per variant, and the image rows. Without
+        variations send `priceMinor` and `stock` (one `default` variant); with
+        variations each has its own. `categorySlug` must exist in
+        `listCategories`.
+      security: *a1
+      parameters:
+        - *a3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOfferRequest"
+      responses:
+        "201":
+          description: The new offer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/Offer"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description:
+            "A business rule refused the change. Codes: `SELLER_NOT_ALLOWED`,
+            `IMAGE_IN_USE`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}/sales:
+    get:
+      tags:
+        - sales
+      operationId: listSales
+      summary: The shop's purchased order lines, newest first
+      description:
+        Shop members only. Read from `OrderLine` joined to this shop's
+        offer items. Marketplace does not record sales; the checkout owner
+        writes orders.
+      security: *a1
+      parameters:
+        - *a3
+      responses:
+        "200":
+          description: Sale lines.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SaleLine"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /sellers/{sellerId}/images:
+    post:
+      tags:
+        - listings
+      operationId: uploadListingImage
+      summary: Upload a listing image (owner only)
+      description:
+        JPG, PNG or WEBP, at most 5 MiB. Send the raw bytes, or multipart
+        form field `file`. Returns an image key to use in `createOffer` or
+        `updateOffer`.
+      security: *a1
+      parameters:
+        - *a3
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: The stored image.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - data
+                properties:
+                  data:
+                    $ref: "#/components/schemas/ListingImage"
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: "`UNAUTHENTICATED`: no session."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description:
+            "`FORBIDDEN`: missing permission, another seller's shop, or a
+            request from another site."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `SELLER_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: "A business rule refused the change. Codes: `SELLER_NOT_ALLOWED`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: "`IMAGE_TOO_LARGE`: more than 5 MiB."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: "`INVALID_IMAGE`: not a JPG, PNG or WEBP image."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /images/{imageKey}:
+    get:
+      tags:
+        - catalog
+      operationId: getListingImage
+      summary: A listing image
+      description:
+        Public once a public offer uses it. Otherwise only for members of
+        its shop and, once attached to an offer, offer moderators; anyone else
+        gets 404.
+      parameters:
+        - name: imageKey
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+          example: mkt_cm3k9x2ab0001qz8l4n7v5t2e_0123456789abcdef0123456789abcdef
+      responses:
+        "200":
+          description: The image bytes.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "400":
+          description:
+            "`VALIDATION_ERROR`: a field is missing or has the wrong type or
+            format. `fieldErrors` names the fields."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: "The resource does not exist or is not public. Codes:
+            `IMAGE_NOT_FOUND`."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: Better Auth session cookie from signing in on this application.
+  schemas:
+    SellerStatus:
+      type: string
+      enum:
+        - pending
+        - active
+        - suspended
+        - terminated
+    OfferStatus:
+      type: string
+      enum:
+        - draft
+        - pending
+        - active
+        - rejected
+        - blocked
+        - removed
+      description: Moderation status. Public reads only return `active`.
+    ProductStatus:
+      type: string
+      enum:
+        - draft
+        - active
+        - archived
+      description:
+        Catalog status of the shared `Product`. A product a seller lists
+        starts `draft` and becomes `active` when its first offer is approved.
+    OrderStatus:
+      type: string
+      enum:
+        - placed
+        - cancelled
+        - completed
+    Availability:
+      type: string
+      enum:
+        - in_stock
+        - out_of_stock
+    Address:
+      type: object
+      required:
+        - street
+        - postalCode
+        - city
+        - country
+      properties:
+        street:
+          type: string
+        postalCode:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+          pattern: ^[A-Z]{2}$
+          description: ISO 3166-1 alpha-2
+    Seller:
+      type: object
+      required:
+        - sellerId
+        - displayName
+        - status
+        - createdAt
+      properties:
+        sellerId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Seller.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        displayName:
+          type: string
+          examples:
+            - Anna's Ceramics
+        status:
+          $ref: "#/components/schemas/SellerStatus"
+        createdAt: &a4
+          type: string
+          format: date-time
+      description: Public view of a shop.
+    SellerAccount:
+      description: A shop with private details. Only for its members and seller moderators.
+      allOf:
+        - $ref: "#/components/schemas/Seller"
+        - type: object
+          required:
+            - legalName
+            - contactEmail
+            - address
+            - statusReason
+          properties:
+            legalName:
+              type: string
+            contactEmail:
+              type: string
+              format: email
+            address:
+              $ref: "#/components/schemas/Address"
+            statusReason:
+              anyOf:
+                - type: string
+                  description: Why the registration was rejected.
+                - type: "null"
+    MyShop:
+      type: object
+      required:
+        - seller
+        - rejectedReason
+      properties:
+        seller:
+          anyOf:
+            - $ref: "#/components/schemas/SellerAccount"
+            - type: "null"
+        rejectedReason:
+          anyOf:
+            - type: string
+              description:
+                Reason of the last rejected registration when there is no current
+                shop.
+            - type: "null"
+    Category:
+      type: object
+      required:
+        - slug
+        - name
+      properties:
+        slug:
+          type: string
+          examples:
+            - home-kitchen
+        name:
+          type: string
+      description: A category of the shared catalog (`Category`).
+    ListingImage:
+      type: object
+      required:
+        - imageKey
+        - imageUrl
+      properties:
+        imageKey:
+          type: string
+          pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+          description: "`OfferImage.storageKey`. Send it back to keep the image."
+        imageUrl:
+          type: string
+    OfferItem:
+      type: object
+      required:
+        - offerItemId
+        - productVariantId
+        - variantCode
+        - label
+        - priceMinor
+        - currency
+        - stock
+        - available
+        - availability
+        - images
+        - inheritsImages
+      properties:
+        offerItemId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`OfferItem.id`: what carts and order lines reference."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        productVariantId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`ProductVariant.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        variantCode:
+          type: string
+          description: "`default` for a product without variations."
+        label:
+          type: string
+          examples:
+            - Blue / M
+        priceMinor:
+          type: integer
+          minimum: 1
+          description: VAT-inclusive cents.
+        currency:
+          type: string
+          examples:
+            - EUR
+        stock:
+          type: integer
+          minimum: 0
+          description: "`InventoryBalance.onHand`."
+        available:
+          type: integer
+          minimum: 0
+          description: "`onHand − held`: what customers can still buy."
+        availability:
+          $ref: "#/components/schemas/Availability"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingImage"
+          description: The item's own images, or the offer images.
+        inheritsImages:
+          type: boolean
+      description: "A sellable item of an offer: one product variant."
+    Offer:
+      type: object
+      required:
+        - offerId
+        - productId
+        - sellerId
+        - name
+        - description
+        - categorySlug
+        - attributes
+        - hasVariations
+        - items
+        - priceMinor
+        - maximumPriceMinor
+        - currency
+        - stock
+        - availability
+        - images
+        - lengthCm
+        - widthCm
+        - heightCm
+        - weightGrams
+        - status
+        - statusReason
+        - updatedAt
+      properties:
+        offerId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Offer.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        productId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Product.id` of the shared catalog."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        sellerId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Seller.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        name:
+          type: string
+          examples:
+            - Stoneware mug
+        description:
+          type: string
+        categorySlug:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        hasVariations:
+          type: boolean
+          description: False when the only item is the product's `default` variant.
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OfferItem"
+          description: Active items only.
+        priceMinor:
+          type: integer
+          minimum: 1
+          description: The cheapest item, VAT-inclusive cents.
+          examples:
+            - 1999
+        maximumPriceMinor:
+          type: integer
+          minimum: 1
+        currency:
+          type: string
+          examples:
+            - EUR
+        stock:
+          type: integer
+          minimum: 0
+          description: Sum of item stock.
+        availability:
+          $ref: "#/components/schemas/Availability"
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingImage"
+          description: Paths on this application's origin, main image first.
+        lengthCm:
+          anyOf:
+            - type: number
+            - type: "null"
+        widthCm:
+          anyOf:
+            - type: number
+            - type: "null"
+        heightCm:
+          anyOf:
+            - type: number
+            - type: "null"
+        weightGrams:
+          anyOf:
+            - type: number
+            - type: "null"
+        status:
+          $ref: "#/components/schemas/OfferStatus"
+        statusReason:
+          anyOf:
+            - type: string
+              description: Why the offer was rejected.
+            - type: "null"
+        updatedAt: *a4
+      description:
+        A shop's listing of a catalog product. Name, description, category
+        and attributes come from the shared `Product`; measurements from its
+        variants.
+    ProductOffer:
+      allOf:
+        - $ref: "#/components/schemas/Offer"
+        - type: object
+          required:
+            - sellerDisplayName
+          properties:
+            sellerDisplayName:
+              type: string
+    Product:
+      type: object
+      required:
+        - productId
+        - name
+        - description
+        - categorySlug
+        - attributes
+        - status
+        - offers
+      properties:
+        productId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Product.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        name:
+          type: string
+        description:
+          type: string
+        categorySlug:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: string
+        status:
+          $ref: "#/components/schemas/ProductStatus"
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductOffer"
+          description: Public offers for this product, cheapest first.
+      description: A catalog product and the shops that sell it.
+    CatalogPage:
+      type: object
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+        nextCursor:
+          anyOf:
+            - type: string
+              description: Pass as `cursor` for the next page. Null on the last page.
+            - type: "null"
+    SaleLine:
+      type: object
+      required:
+        - orderLineId
+        - orderId
+        - offerId
+        - offerItemId
+        - productName
+        - variantLabel
+        - quantity
+        - unitPriceMinor
+        - totalMinor
+        - currency
+        - placedAt
+        - orderStatus
+        - paid
+      properties:
+        orderLineId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`OrderLine.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        orderId:
+          type: string
+        offerId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`Offer.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        offerItemId:
+          type: string
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: "`OfferItem.id`."
+          examples:
+            - cm3k9x2ab0001qz8l4n7v5t2e
+        productName:
+          type: string
+          description: Snapshot at purchase.
+        variantLabel:
+          type: string
+          description: Snapshot at purchase.
+        quantity:
+          type: integer
+          minimum: 1
+        unitPriceMinor:
+          type: integer
+          description: Unit price at purchase.
+        totalMinor:
+          type: integer
+          description: "`OrderLine.totalMinor`."
+        currency:
+          type: string
+        placedAt: *a4
+        orderStatus:
+          $ref: "#/components/schemas/OrderStatus"
+        paid:
+          type: boolean
+          description: The order has a confirmed payment.
+      description: A purchased order line of this shop's offers, read from the
+        canonical order tables.
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              examples:
+                - OFFER_NOT_FOUND
+            message:
+              type: string
+            fieldErrors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+    RegisterSellerRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 60
+        legalName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        contactEmail:
+          type: string
+          maxLength: 120
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+              minLength: 1
+              maxLength: 100
+            postalCode:
+              type: string
+              minLength: 1
+              maxLength: 12
+            city:
+              type: string
+              minLength: 1
+              maxLength: 60
+            country:
+              type: string
+              pattern: ^[A-Z]{2}$
+          required:
+            - street
+            - postalCode
+            - city
+            - country
+          additionalProperties: false
+      required:
+        - displayName
+        - legalName
+        - contactEmail
+        - address
+      additionalProperties: false
+    UpdateSellerRequest:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 60
+        legalName:
+          type: string
+          minLength: 2
+          maxLength: 100
+        contactEmail:
+          type: string
+          maxLength: 120
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+              minLength: 1
+              maxLength: 100
+            postalCode:
+              type: string
+              minLength: 1
+              maxLength: 12
+            city:
+              type: string
+              minLength: 1
+              maxLength: 60
+            country:
+              type: string
+              pattern: ^[A-Z]{2}$
+          required:
+            - street
+            - postalCode
+            - city
+            - country
+          additionalProperties: false
+      additionalProperties: false
+    CreateOfferRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 1000
+        categorySlug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9_-]{0,63}$
+        attributes:
+          default: {}
+          type: object
+          propertyNames:
+            type: string
+            minLength: 1
+            maxLength: 40
+          additionalProperties:
+            type: string
+            maxLength: 200
+        imageKeys:
+          minItems: 1
+          maxItems: 10
+          type: array
+          items:
+            type: string
+            pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+        priceMinor:
+          anyOf:
+            - type: integer
+              minimum: 1
+              maximum: 10000000
+            - type: "null"
+        stock:
+          anyOf:
+            - type: integer
+              minimum: 0
+              maximum: 100000
+            - type: "null"
+        variations:
+          default: []
+          maxItems: 100
+          type: array
+          items:
+            type: object
+            properties:
+              offerItemId:
+                anyOf:
+                  - type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
+                  - type: "null"
+              label:
+                type: string
+                minLength: 1
+                maxLength: 80
+              priceMinor:
+                type: integer
+                minimum: 1
+                maximum: 10000000
+              stock:
+                type: integer
+                minimum: 0
+                maximum: 100000
+              imageKeys:
+                default: []
+                maxItems: 10
+                type: array
+                items:
+                  type: string
+                  pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+            required:
+              - label
+              - priceMinor
+              - stock
+            additionalProperties: false
+        lengthCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        widthCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        heightCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        weightGrams:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+      required:
+        - name
+        - description
+        - categorySlug
+        - imageKeys
+      additionalProperties: false
+    UpdateOfferRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 1000
+        categorySlug:
+          type: string
+          pattern: ^[a-z0-9][a-z0-9_-]{0,63}$
+        attributes:
+          type: object
+          propertyNames:
+            type: string
+            minLength: 1
+            maxLength: 40
+          additionalProperties:
+            type: string
+            maxLength: 200
+        imageKeys:
+          minItems: 1
+          maxItems: 10
+          type: array
+          items:
+            type: string
+            pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+        priceMinor:
+          type: integer
+          minimum: 1
+          maximum: 10000000
+        stock:
+          type: integer
+          minimum: 0
+          maximum: 100000
+        variations:
+          maxItems: 100
+          type: array
+          items:
+            type: object
+            properties:
+              offerItemId:
+                anyOf:
+                  - type: string
+                    pattern: ^[A-Za-z0-9_-]{1,64}$
+                  - type: "null"
+              label:
+                type: string
+                minLength: 1
+                maxLength: 80
+              priceMinor:
+                type: integer
+                minimum: 1
+                maximum: 10000000
+              stock:
+                type: integer
+                minimum: 0
+                maximum: 100000
+              imageKeys:
+                default: []
+                maxItems: 10
+                type: array
+                items:
+                  type: string
+                  pattern: ^mkt_[A-Za-z0-9_-]{1,64}_[a-f0-9]{32}$
+            required:
+              - label
+              - priceMinor
+              - stock
+            additionalProperties: false
+        lengthCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        widthCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        heightCm:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+        weightGrams:
+          anyOf:
+            - type: number
+              exclusiveMinimum: 0
+            - type: "null"
+      additionalProperties: false
+    RejectRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 3
+          maxLength: 300
+      required:
+        - reason
+      additionalProperties: false

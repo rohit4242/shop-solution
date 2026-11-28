@@ -20,3 +20,6 @@ __pycache__/
 
 # Generated exports (PDFs, screenshots)
 output/
+
+# Local Marketplace image storage (MARKETPLACE_IMAGE_DIR default)
+.data/
