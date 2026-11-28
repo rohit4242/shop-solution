@@ -1,6 +1,6 @@
 # Repository instructions
 
-Read README.md, docs/architecture.md, docs/coding-conventions.md, docs/contribution-guide.md and the target feature README before editing. Documentation is the single source of truth.
+Read README.md, docs/README.md, docs/architecture.md, docs/coding-conventions.md, docs/contribution-guide.md and the target feature README before editing. Documentation is the single source of truth. Update affected guides and contracts and run pnpm docs:check.
 
 Respect feature public interfaces and server/client boundaries. Keep changes scoped; document contract and schema changes. Do not invent ownership for unassigned commerce domains. Follow explicit user authorization for external actions; never infer permission to publish, deploy, merge or push main from an implementation task.
 
@@ -13,6 +13,8 @@ Read docs/feature-guide.md for the annotated folder tree, naming/import conventi
 For database work, read prisma/README.md and the affected feature contracts. Reuse the canonical shop entities and IDs. Include a reviewed migration and identify affected consumers for schema changes. Use a disposable local database for migration tests. Follow docs/contribution-guide.md and the PR template when preparing changes for review.
 
 For authentication and authorization work, read docs/authentication.md and the affected feature contracts. Use the documented session authority for each route, check permissions and resource ownership on the server, and verify changes with disposable PostgreSQL and test accounts.
+
+For UI work, read PRODUCT.md and DESIGN.md. Reuse shared semantic tokens and components, and verify relevant screen states at mobile and desktop widths.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

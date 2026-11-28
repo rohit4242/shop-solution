@@ -1,1 +1,1 @@
-CI runs lint, types, unit tests, formatting, Prisma validation and production build. Cross-group review requires a populated roster and GitHub main protections. See docs/review-policy.md.
+The quality job runs lint, types, tests, documentation and API contract checks, formatting, Prisma validation, and a production build. See the [documentation check guide](../../docs/README.md#documentation-checks) for the PR warnings. Cross-group review requires a populated roster and GitHub main protections. See the [review policy](../../docs/review-policy.md).

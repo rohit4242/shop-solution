@@ -104,3 +104,5 @@ Use a branch such as `feat/logistics/create-shipment`. In the PR, describe the e
 ## Feature README checklist
 
 Before exposing a feature API, record its owning team, operations, input/output types, authorization rules, domain errors, tables it owns, dependencies and verification commands. Record breaking changes with affected consumers in the same PR.
+
+Start with the [feature README template](templates/feature-readme.md) and follow the [documentation checklist](README.md#where-teams-put-their-docs).
