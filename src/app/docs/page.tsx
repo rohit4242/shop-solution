@@ -76,13 +76,15 @@ const teams: {
   {
     slug: "marketing",
     name: "Marketing",
-    description: "Promotions workspace and API contract",
+    description: "Live docs",
     links: [
-      { label: "Marketing workspace", href: "/marketing/promotions" },
+      { label: "API docs", href: "/docs/marketing" },
       {
-        label: "OpenAPI contract",
-        href: `${repo}/blob/main/src/features/marketing/api/openapi.yaml`,
+        label: "Use with your AI agent (MCP)",
+        href: "/docs/marketing/use-with-ai",
       },
+      { label: "OpenAPI contract", href: "/docs/marketing/openapi.yaml" },
+      { label: "Marketing workspace", href: "/marketing/promotions" },
     ],
   },
   { slug: "marketplace", name: "Marketplace" },
