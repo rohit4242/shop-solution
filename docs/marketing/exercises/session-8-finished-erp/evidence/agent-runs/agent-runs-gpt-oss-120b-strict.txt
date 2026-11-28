@@ -1,0 +1,10 @@
+PASS  m1-promotion-raised #1  3.3s  tools: list_active_promotions, deactivate_promotion, create_promotion, check_cart_discount
+PASS  m1-promotion-raised #2  3.5s  tools: list_active_promotions, deactivate_promotion, create_promotion, check_cart_discount
+FAIL  m1-promotion-raised #3  10.7s  tools: list_active_promotions, deactivate_promotion, create_promotion, check_cart_discount
+      ✗ the 10 % promotion keeps the old end (31 Dec 2026)  got {"validTo":null,"oldValidTo":"2026-12-31T22:59:59.000Z"}
+FAIL  m1-promotion-raised #4  18.8s  tools: list_active_promotions, deactivate_promotion, create_promotion, check_cart_discount
+      ✗ the 10 % promotion keeps the old end (31 Dec 2026)  got {"validTo":null,"oldValidTo":"2026-12-31T22:59:59.000Z"}
+PASS  m1-promotion-raised #5  32.6s  tools: list_active_promotions, deactivate_promotion, create_promotion, check_cart_discount
+
+Model: openai/gpt-oss-120b via https://api.groq.com/openai/v1
+m1-promotion-raised: 3/5 pass · "done" but failed: 2 · avg tokens 8111

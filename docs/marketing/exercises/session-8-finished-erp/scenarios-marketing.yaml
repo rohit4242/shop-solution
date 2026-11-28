@@ -1,0 +1,63 @@
+# Marketing's agent scenarios for the shared scenario file (format from lecture 8, slide 9).
+# 27 Nov 2026. Scenarios 1 and 2 are implemented in run-scenarios.mjs and were run (see test-report.md).
+# Scenario 3 needs Storefront and Accounting; ${...} placeholders are filled once the test data is agreed.
+#
+# Rules from the lecture:
+#  - setup: every run starts from a reset of all modules the scenario uses
+#  - check: code against the APIs. Never ask the agent whether it succeeded.
+#  - runs: at least 5; report the pass rate and look at every failed run
+
+- id: m1-promotion-created # story step j
+  owner: Marketing
+  servers: [catalog, marketing] # catalog = whichever team owns products (still to decide)
+  setup: reset
+  task: >
+    Create a promotion that gives 10 % off the wireless mouse M1 (product id M1),
+    valid from today until 31 December 2026.
+  check:
+    # GET /api/v1/marketing/promotions/active
+    - exactly one active promotion whose productIds is [${M1_PRODUCT_ID}]
+    - its type is percent and its value is 10
+    - validFrom <= today and validTo includes the whole of 2026-12-31 (Berlin) and ends by 2027-01-01
+    - no other promotion was created (count before = 0, after = 1)
+  why: >
+    Cross-module. The agent knows the product only by its name "M1" and has to look up its id in the
+    catalog first. A guessed id (e.g. "M1" itself) creates a promotion that never applies.
+  runs: 5 # result 27 Nov: 10/10 (5 × gpt-oss-120b, 5 × gpt-oss-20b)
+  note: no catalog in shop-solution yet, so the task gives the product id; the lookup part is still to do.
+
+- id: m1-promotion-raised # step j changed, before k
+  owner: Marketing
+  servers: [marketing]
+  setup: reset, then a 5 % promotion for M1 valid until 2026-12-31
+  task: >
+    M1 (product id M1) currently has a 5 % promotion. Raise it to 10 %. Afterwards a customer buying one M1
+    at 59.90 EUR must get exactly 10 % off, not more and not less. Tell me the discount amount the customer gets.
+  check:
+    - exactly one active promotion for M1, percent, value 10
+    - it keeps the original end (2026-12-31)
+    - POST /discounts/validate with one M1 at 59.90 gives 5.99, appliedBy promotion
+    - the agent's answer states 5.99
+  why: >
+    Changing a promotion is where agents lose fields. Found: without an update tool, agents re-created the
+    promotion without an end date and still reported success (3/10). Fixed with update_promotion: 10/10.
+  runs: 5
+
+- id: promotion-applied-at-checkout # step k across modules, NOT RUN YET   # story step k
+  owner: Marketing
+  servers: [storefront, marketing, accounting]
+  setup: reset, then create M1 (price ${M1_PRICE}, stock 10), the 10 % M1 promotion and the test customer
+  task: >
+    Place an order for one wireless mouse M1 for the test customer ${TEST_CUSTOMER_ID},
+    and make sure any promotion that applies is used.
+  check:
+    # Storefront: GET the customer's orders
+    - exactly one new order, containing one M1
+    # Marketing: GET /api/v1/marketing/orders/{orderId}/discounts
+    - the M1 line has discount = 10 % of ${M1_PRICE}, rounded half up to 2 places
+    # Accounting: GET the invoice for that order
+    - exactly one invoice for the order, and it shows the same discount
+  why: >
+    Crosses three modules. Catches a duplicate order, a discount that Marketing computed but that never
+    reached the invoice, and the agent reporting "done" when the invoice is missing.
+  runs: 5

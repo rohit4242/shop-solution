@@ -73,7 +73,22 @@ const teams: {
       },
     ],
   },
-  { slug: "marketing", name: "Marketing" },
+  {
+    slug: "marketing",
+    name: "Marketing",
+    description: "Workspace, API contract, MCP and exercise docs",
+    links: [
+      { label: "Marketing workspace", href: "/marketing/promotions" },
+      {
+        label: "OpenAPI contract",
+        href: `${repo}/blob/main/docs/marketing/marketing.yaml`,
+      },
+      {
+        label: "Exercise and MCP docs",
+        href: `${repo}/tree/main/docs/marketing`,
+      },
+    ],
+  },
   { slug: "marketplace", name: "Marketplace" },
   { slug: "reviews-ratings", name: "Reviews & Ratings" },
   { slug: "storefront", name: "Storefront" },

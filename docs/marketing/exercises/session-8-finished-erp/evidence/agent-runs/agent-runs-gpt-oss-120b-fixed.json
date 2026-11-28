@@ -1,0 +1,772 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "baseUrl": "https://api.groq.com/openai/v1",
+  "date": "2026-11-27T21:20:29.022Z",
+  "records": [
+    {
+      "scenario": "m1-promotion-created",
+      "run": 1,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 2.3,
+      "tokens": {
+        "input": 3078,
+        "output": 514
+      },
+      "toolCalls": [
+        {
+          "tool": "create_promotion",
+          "input": {
+            "description": "10 percent discount on wireless mouse M1",
+            "name": "10% off Wireless Mouse M1",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        }
+      ],
+      "answer": "✅ The promotion has been created successfully.\n\n**Promotion Details**\n- **Name:** 10% off Wireless Mouse M1  \n- **Description:** 10 percent discount on wireless mouse M1  \n- **Type:** Percent (10 %)  \n- **Applies to:** Product ID **M1** (wireless mouse)  \n- **Validity:** From **2026‑11‑27 00:00 +01:00** (today) until **2026‑12‑31 23:59 +01:00**  \n- **Promotion ID:** `bdb30a53-3261-4746-997e-9e32502d1191`  \n\nThe promotion is now active and will automatically apply at checkout for the specified product. Let me know if you need any further changes or additional promotions!",
+      "checks": [
+        {
+          "name": "exactly one promotion exists (none created twice)",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "exactly one promotion is active now",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "it applies only to M1",
+          "ok": true,
+          "got": {
+            "productIds": ["M1"],
+            "categoryIds": []
+          }
+        },
+        {
+          "name": "it is percent with value 10",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "it starts today or earlier",
+          "ok": true,
+          "got": "2026-11-26T23:00:00.000Z"
+        },
+        {
+          "name": "it includes the whole of 31 Dec 2026 and ends by 1 Jan 2027 (Berlin)",
+          "ok": true,
+          "got": "2026-12-31T22:59:59.000Z"
+        },
+        {
+          "name": "checkout gives 5.99 off M1 at 59.90",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-created",
+      "run": 2,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 2.7,
+      "tokens": {
+        "input": 4903,
+        "output": 520
+      },
+      "toolCalls": [
+        {
+          "tool": "create_promotion",
+          "input": {
+            "description": "10 percent discount on wireless mouse M1",
+            "name": "10% off Wireless Mouse M1",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        }
+      ],
+      "answer": "The promotion has been created successfully.\n\n**Promotion Details**\n- **Name:** 10% off Wireless Mouse M1  \n- **Description:** 10 percent discount on wireless mouse M1  \n- **Type:** Percent (10 %)  \n- **Applies to:** Product ID **M1** (wireless mouse)  \n- **Validity:** From **2026‑11‑27 00:00 +01:00** (today) until **2026‑12‑31 23:59 +01:00**  \n- **Promotion ID:** `2fed45d4-b891-4f6c-9c3b-0a147919bab9`  \n\nThe promotion is active and will be automatically applied at checkout for the specified product during the defined period. Let me know if you need any further changes!",
+      "checks": [
+        {
+          "name": "exactly one promotion exists (none created twice)",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "exactly one promotion is active now",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "it applies only to M1",
+          "ok": true,
+          "got": {
+            "productIds": ["M1"],
+            "categoryIds": []
+          }
+        },
+        {
+          "name": "it is percent with value 10",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "it starts today or earlier",
+          "ok": true,
+          "got": "2026-11-26T23:00:00.000Z"
+        },
+        {
+          "name": "it includes the whole of 31 Dec 2026 and ends by 1 Jan 2027 (Berlin)",
+          "ok": true,
+          "got": "2026-12-31T22:59:59.000Z"
+        },
+        {
+          "name": "checkout gives 5.99 off M1 at 59.90",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-created",
+      "run": 3,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 6.1,
+      "tokens": {
+        "input": 3084,
+        "output": 531
+      },
+      "toolCalls": [
+        {
+          "tool": "create_promotion",
+          "input": {
+            "description": "10 percent discount on the wireless mouse M1",
+            "name": "10% off Wireless Mouse M1",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        }
+      ],
+      "answer": "✅ Promotion created successfully!\n\n**Promotion details**\n- **Name:** 10% off Wireless Mouse M1  \n- **Description:** 10 percent discount on the wireless mouse M1  \n- **Type:** Percent (10 %)  \n- **Applies to product:** M1 (Wireless Mouse)  \n- **Validity:** From **2026‑11‑27** (today) 00:00 +01:00 until **2026‑12‑31** 23:59 +01:00  \n- **Promotion ID:** `3d6bd38b-0c98-4ec2-ac19-5d0f2e3ea006`  \n- **Active:** Yes  \n\nThe promotion is now live and will automatically apply a 10 % discount to the wireless mouse (product M1) at checkout during the specified period. Let me know if you need any further changes!",
+      "checks": [
+        {
+          "name": "exactly one promotion exists (none created twice)",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "exactly one promotion is active now",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "it applies only to M1",
+          "ok": true,
+          "got": {
+            "productIds": ["M1"],
+            "categoryIds": []
+          }
+        },
+        {
+          "name": "it is percent with value 10",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "it starts today or earlier",
+          "ok": true,
+          "got": "2026-11-26T23:00:00.000Z"
+        },
+        {
+          "name": "it includes the whole of 31 Dec 2026 and ends by 1 Jan 2027 (Berlin)",
+          "ok": true,
+          "got": "2026-12-31T22:59:59.000Z"
+        },
+        {
+          "name": "checkout gives 5.99 off M1 at 59.90",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-created",
+      "run": 4,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 22.8,
+      "tokens": {
+        "input": 4900,
+        "output": 612
+      },
+      "toolCalls": [
+        {
+          "tool": "create_promotion",
+          "input": {
+            "description": "10 percent discount on wireless mouse M1",
+            "name": "10% off Wireless Mouse M1",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        }
+      ],
+      "answer": "✅ The promotion has been created successfully.\n\n**Promotion details**\n\n| Field | Value |\n|-------|-------|\n| **Promotion ID** | `6fdded99-bf39-4a1a-84d0-29d699760398` |\n| **Name** | `10% off Wireless Mouse M1` |\n| **Description** | `10 percent discount on wireless mouse M1` |\n| **Type** | `percent` |\n| **Value** | `10 %` |\n| **Product(s) affected** | `M1` (Wireless Mouse) |\n| **Valid from** | `2026‑11‑27 00:00:00 +01:00` (today) |\n| **Valid to** | `2026‑12‑31 23:59:59 +01:00` |\n| **Active** | Yes |\n\nThe promotion is now live and will automatically apply a 10 % discount to the wireless mouse (product ID M1) for any checkout occurring between today and 31 December 2026. Let me know if you need any further changes or additional promotions!",
+      "checks": [
+        {
+          "name": "exactly one promotion exists (none created twice)",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "exactly one promotion is active now",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "it applies only to M1",
+          "ok": true,
+          "got": {
+            "productIds": ["M1"],
+            "categoryIds": []
+          }
+        },
+        {
+          "name": "it is percent with value 10",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "it starts today or earlier",
+          "ok": true,
+          "got": "2026-11-26T23:00:00.000Z"
+        },
+        {
+          "name": "it includes the whole of 31 Dec 2026 and ends by 1 Jan 2027 (Berlin)",
+          "ok": true,
+          "got": "2026-12-31T22:59:59.000Z"
+        },
+        {
+          "name": "checkout gives 5.99 off M1 at 59.90",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-created",
+      "run": 5,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 20.2,
+      "tokens": {
+        "input": 3078,
+        "output": 606
+      },
+      "toolCalls": [
+        {
+          "tool": "create_promotion",
+          "input": {
+            "description": "10 percent discount on wireless mouse M1",
+            "name": "10% off Wireless Mouse M1",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        }
+      ],
+      "answer": "✅ Promotion created successfully!\n\n**Promotion details**\n\n- **Name:** 10% off Wireless Mouse M1  \n- **Description:** 10 percent discount on wireless mouse M1  \n- **Type:** Percent (10 % off)  \n- **Applies to product:** M1 (Wireless Mouse)  \n- **Validity:** from **2026‑11‑27 00:00 +01:00** (today) until **2026‑12‑31 23:59 +01:00**  \n- **Promotion ID:** `4daa8204-a0bb-4354-b7e5-e2049c45fe1a`  \n- **Active:** Yes  \n\nThe promotion is now live and will automatically apply at checkout for the wireless mouse (product M1) during the specified period. Let me know if you need any changes or additional promotions!",
+      "checks": [
+        {
+          "name": "exactly one promotion exists (none created twice)",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "exactly one promotion is active now",
+          "ok": true,
+          "got": 1
+        },
+        {
+          "name": "it applies only to M1",
+          "ok": true,
+          "got": {
+            "productIds": ["M1"],
+            "categoryIds": []
+          }
+        },
+        {
+          "name": "it is percent with value 10",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "it starts today or earlier",
+          "ok": true,
+          "got": "2026-11-26T23:00:00.000Z"
+        },
+        {
+          "name": "it includes the whole of 31 Dec 2026 and ends by 1 Jan 2027 (Berlin)",
+          "ok": true,
+          "got": "2026-12-31T22:59:59.000Z"
+        },
+        {
+          "name": "checkout gives 5.99 off M1 at 59.90",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 1,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 36.9,
+      "tokens": {
+        "input": 6862,
+        "output": 551
+      },
+      "toolCalls": [
+        {
+          "tool": "list_promotions",
+          "input": {
+            "active": true
+          }
+        },
+        {
+          "tool": "update_promotion",
+          "input": {
+            "promotionId": "ad4683bb-9641-49ec-8186-4d2eeb7173a9",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The promotion for product **M1** has been updated from **5 %** to **10 %**.\n\nA test checkout for one unit of M1 priced at **€ 59.90** now yields:\n\n* **Discount total:** **€ 5.99**  \n* **Discount per item:** **€ 5.99** (exactly 10 % of € 59.90)  \n\nSo the customer will receive **€ 5.99 off** – precisely a 10 % discount, no more and no less.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the 10 % promotion keeps the original end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "originalEnd": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 2,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 26.4,
+      "tokens": {
+        "input": 6718,
+        "output": 339
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "update_promotion",
+          "input": {
+            "promotionId": "13032f3a-22d7-42f2-b847-0fd539776056",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "currency": "EUR",
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The promotion for product **M1** has been updated to **10 %** off.\n\nA cart with one M1 priced at € 59.90 receives a discount of **€ 5.99** (10 % of € 59.90).",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the 10 % promotion keeps the original end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "originalEnd": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 3,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 34.6,
+      "tokens": {
+        "input": 6726,
+        "output": 482
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "update_promotion",
+          "input": {
+            "promotionId": "2bb078ea-cc34-413e-b09e-84d4cc3ff32d",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "currency": "EUR",
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The promotion for product **M1** has been updated from **5 %** to **10 %**.\n\nA cart with one unit of M1 priced at **€ 59.90** now receives a discount of **€ 5.99** (exactly 10 % off).",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the 10 % promotion keeps the original end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "originalEnd": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 4,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 13.1,
+      "tokens": {
+        "input": 6858,
+        "output": 497
+      },
+      "toolCalls": [
+        {
+          "tool": "list_promotions",
+          "input": {
+            "active": true
+          }
+        },
+        {
+          "tool": "update_promotion",
+          "input": {
+            "promotionId": "e4bf3ef6-e135-4914-91aa-d6d808f4822a",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "currency": "EUR",
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The promotion for product **M1** has been updated from 5 % to 10 %.  \n\nA test checkout for one M1 priced at € 59.90 now receives a discount of **€ 5.99** (exactly 10 % of the price).",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the 10 % promotion keeps the original end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "originalEnd": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 5,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 34.3,
+      "tokens": {
+        "input": 6730,
+        "output": 478
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "update_promotion",
+          "input": {
+            "promotionId": "912746ed-28b2-4a3b-9677-fd50501f65d6",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The promotion for product **M1** has been updated from **5 %** to **10 %**.\n\nFor a cart containing **one M1** priced at **€ 59.90**, the checkout discount is:\n\n**€ 5.99** (exactly 10 % off).\n\nSo the customer will receive a € 5.99 discount on that purchase.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the 10 % promotion keeps the original end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "originalEnd": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

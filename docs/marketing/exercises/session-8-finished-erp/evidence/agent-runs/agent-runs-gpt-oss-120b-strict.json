@@ -1,0 +1,475 @@
+{
+  "model": "openai/gpt-oss-120b",
+  "baseUrl": "https://api.groq.com/openai/v1",
+  "date": "2026-11-27T21:13:48.164Z",
+  "records": [
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 1,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 3.3,
+      "tokens": {
+        "input": 7428,
+        "output": 815
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "deactivate_promotion",
+          "input": {
+            "promotionId": "8df6855b-4692-4e78-a560-9ba150a005aa"
+          }
+        },
+        {
+          "tool": "create_promotion",
+          "input": {
+            "categoryIds": [],
+            "description": "10 % off M1",
+            "name": "M1 10 %",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "currency": "EUR",
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The 5 % promotion on product **M1** has been deactivated and a new automatic promotion of **10 % off** for **M1** has been created (promotion ID `fd911dd9-f17f-40f9-9259-54b6fb429d38`, active until 2026‑12‑31).\n\nA cart with one unit of **M1** priced at **€ 59.90** now receives:\n\n* **Discount total:** **€ 5.99**  \n* **Discount per item:** **€ 5.99** on the single M1  \n\nThis is exactly a 10 % discount (10 % × 59.90 = 5.99), no more and no less.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the old 5 % promotion is no longer active",
+          "ok": true,
+          "got": false
+        },
+        {
+          "name": "the 10 % promotion keeps the old end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "oldValidTo": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 2,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 3.5,
+      "tokens": {
+        "input": 7386,
+        "output": 748
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "deactivate_promotion",
+          "input": {
+            "promotionId": "bc28751d-4103-4229-9c95-af0b66532830"
+          }
+        },
+        {
+          "tool": "create_promotion",
+          "input": {
+            "categoryIds": [],
+            "description": "10 % off M1",
+            "name": "M1 10 %",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The 10 % promotion for product **M1** has been created and the previous 5 % promotion deactivated.\n\nA cart with one M1 priced at € 59.90 receives a discount of **€ 5.99**, which is exactly 10 % of the price.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the old 5 % promotion is no longer active",
+          "ok": true,
+          "got": false
+        },
+        {
+          "name": "the 10 % promotion keeps the old end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "oldValidTo": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 3,
+      "passed": false,
+      "saidDoneButFailed": true,
+      "error": null,
+      "seconds": 10.7,
+      "tokens": {
+        "input": 7395,
+        "output": 692
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "deactivate_promotion",
+          "input": {
+            "promotionId": "c01e72a9-0b55-41f5-a257-4559798a30c7"
+          }
+        },
+        {
+          "tool": "create_promotion",
+          "input": {
+            "categoryIds": [],
+            "description": "10 % off M1",
+            "name": "M1 10 %",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The 5 % promotion on product **M1** was deactivated and a new 10 % promotion was created.\n\n**Discount for a cart with one M1 (price €59.90):**  \n- Discount amount: **€5.99** (exactly 10 % of €59.90)  \n- Applied by: promotion (ID 42a6c3d0‑7005‑4a8e‑9bb8‑308614184ba8)  \n\nThe customer will receive precisely a 10 % discount, no more and no less.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the old 5 % promotion is no longer active",
+          "ok": true,
+          "got": false
+        },
+        {
+          "name": "the 10 % promotion keeps the old end (31 Dec 2026)",
+          "ok": false,
+          "got": {
+            "validTo": null,
+            "oldValidTo": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 4,
+      "passed": false,
+      "saidDoneButFailed": true,
+      "error": null,
+      "seconds": 18.8,
+      "tokens": {
+        "input": 7380,
+        "output": 724
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "deactivate_promotion",
+          "input": {
+            "promotionId": "75cc97b8-b0a6-4954-bb36-d15fd8c4bef0"
+          }
+        },
+        {
+          "tool": "create_promotion",
+          "input": {
+            "categoryIds": [],
+            "description": "10 % off M1",
+            "name": "M1 10 %",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validFrom": "2026-11-27T00:00:00+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "currency": "EUR",
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The 5 % promotion on product **M1** has been deactivated and a new 10 % promotion has been created.\n\n**Discount for a cart with one M1 (price €59.90):**  \n- Discount amount: **€5.99** (exactly 10 % of €59.90)  \n- Applied by: promotion (ID 750c0b6f‑30df‑4985‑8f41‑c1485e681541)\n\nThe customer will receive precisely a 10 % discount, no more and no less.",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the old 5 % promotion is no longer active",
+          "ok": true,
+          "got": false
+        },
+        {
+          "name": "the 10 % promotion keeps the old end (31 Dec 2026)",
+          "ok": false,
+          "got": {
+            "validTo": null,
+            "oldValidTo": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "scenario": "m1-promotion-raised",
+      "run": 5,
+      "passed": true,
+      "saidDoneButFailed": false,
+      "error": null,
+      "seconds": 32.6,
+      "tokens": {
+        "input": 7383,
+        "output": 602
+      },
+      "toolCalls": [
+        {
+          "tool": "list_active_promotions",
+          "input": {}
+        },
+        {
+          "tool": "deactivate_promotion",
+          "input": {
+            "promotionId": "ad249eee-1e9c-4752-8797-081496fcc06e"
+          }
+        },
+        {
+          "tool": "create_promotion",
+          "input": {
+            "categoryIds": [],
+            "description": "10 % off M1",
+            "name": "M1 10 %",
+            "productIds": ["M1"],
+            "type": "percent",
+            "validTo": "2026-12-31T23:59:59+01:00",
+            "value": 10
+          }
+        },
+        {
+          "tool": "check_cart_discount",
+          "input": {
+            "items": [
+              {
+                "productId": "M1",
+                "quantity": 1,
+                "unitPrice": 59.9
+              }
+            ]
+          }
+        }
+      ],
+      "answer": "The 5 % promotion on product **M1** has been deactivated and a new 10 % promotion has been created.\n\n**Discount for a cart with one M1 (price €59.90):** €5.99 (exactly 10 % off).",
+      "checks": [
+        {
+          "name": "exactly one active promotion for M1",
+          "ok": true,
+          "got": ["10%"]
+        },
+        {
+          "name": "the active one is 10 %",
+          "ok": true,
+          "got": {
+            "type": "percent",
+            "value": 10
+          }
+        },
+        {
+          "name": "the old 5 % promotion is no longer active",
+          "ok": true,
+          "got": false
+        },
+        {
+          "name": "the 10 % promotion keeps the old end (31 Dec 2026)",
+          "ok": true,
+          "got": {
+            "validTo": "2026-12-31T22:59:59.000Z",
+            "oldValidTo": "2026-12-31T22:59:59.000Z"
+          }
+        },
+        {
+          "name": "checkout gives exactly 5.99 off M1 at 59.90",
+          "ok": true,
+          "got": {
+            "discountTotal": 5.99,
+            "appliedBy": "promotion"
+          }
+        },
+        {
+          "name": "the agent's answer states 5.99",
+          "ok": true
+        },
+        {
+          "name": "the agent reported success",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

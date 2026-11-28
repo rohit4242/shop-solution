@@ -16,6 +16,9 @@ Depends on: the shared catalog (products and categories a promotion targets) and
 `marketing_manager` permission). Checkout, which will store the applied discount with the order, has no assigned
 owner yet ([docs/team-ownership.md](../../../docs/team-ownership.md)).
 
+More docs: the [start page](../../../docs/marketing/README.md) (also linked from the in-app `/docs` hub), the
+[MCP guide](../../../docs/marketing/mcp.md) and the [session 8 record](../../../docs/marketing/exercises/session-8-finished-erp/README.md).
+
 ## Run locally
 
 1. `pnpm install`, then `pnpm db:deploy` against a disposable local database ([prisma/README.md](../../../prisma/README.md)).
@@ -26,7 +29,7 @@ owner yet ([docs/team-ownership.md](../../../docs/team-ownership.md)).
    - `MARKETING_RESET_ENABLED`, `MARKETING_RESET_TOKEN` (local test setup only; reset is always off in a
      production build).
 3. `pnpm dev`. The back-office screen is `/marketing/promotions`. The MCP server for agents is
-   `/api/mcp/marketing` (manager login required; 6 tools, no reset or delete).
+   `/api/mcp/marketing` (manager login required; 6 tools, no reset or delete; [how to connect](../../../docs/marketing/mcp.md)).
 
 A promotion can only target products that exist in the shared `product` table. Until the catalog team's code
 is in, the system test creates stand-in products M1 and M2 ([tests/system/fixtures.mjs](tests/system/fixtures.mjs)).

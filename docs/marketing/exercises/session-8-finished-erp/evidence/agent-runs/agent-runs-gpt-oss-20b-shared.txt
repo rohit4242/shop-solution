@@ -1,0 +1,14 @@
+PASS  m1-promotion-created #1  2.1s  tools: list_active_promotions, create_promotion, list_active_promotions
+PASS  m1-promotion-created #2  23.7s  tools: create_promotion, list_promotions, list_active_promotions
+PASS  m1-promotion-created #3  20.1s  tools: create_promotion
+PASS  m1-promotion-created #4  19.3s  tools: create_promotion
+PASS  m1-promotion-created #5  12s  tools: create_promotion
+PASS  m1-promotion-raised #1  17.8s  tools: list_active_promotions, update_promotion, check_cart_discount
+PASS  m1-promotion-raised #2  12.8s  tools: list_promotions, update_promotion, check_cart_discount
+PASS  m1-promotion-raised #3  26.7s  tools: list_promotions, update_promotion, check_cart_discount
+PASS  m1-promotion-raised #4  16.8s  tools: list_active_promotions, update_promotion, check_cart_discount
+PASS  m1-promotion-raised #5  17s  tools: list_active_promotions, update_promotion, check_cart_discount
+
+Model: openai/gpt-oss-20b via https://api.groq.com/openai/v1
+m1-promotion-created: 5/5 pass · "done" but failed: 0 · avg tokens 4451
+m1-promotion-raised: 5/5 pass · "done" but failed: 0 · avg tokens 6321

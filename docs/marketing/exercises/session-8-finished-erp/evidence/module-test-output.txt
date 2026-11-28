@@ -1,0 +1,155 @@
+# pnpm exec vitest run src/features/marketing   (PR #23 @ 160e895, shared shop schema, 2026-11-28T03:42Z)
+
+ RUN  v5.0.5 shop-solution
+
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > isLineEligible (AC1) > empty scope = whole cart, also when the lists are missing 1ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > isLineEligible (AC1) > matches by productId, by categoryId, or either 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > isLineEligible (AC1) > a line without categoryId never matches a category 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > calculateDiscount with a scope (AC1) > scoped percent: only eligible lines are discounted (product, category, either) 2ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > calculateDiscount with a scope (AC1) > scoped fixed: split over eligible lines only, exact sum 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > calculateDiscount with a scope (AC1) > scoped fixed is capped at the eligible subtotal, not the cart subtotal 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > calculateDiscount with a scope (AC1) > keeps the remainder on eligible lines (three equal eligible lines, one ineligible) 1ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > calculateDiscount with a scope (AC1) > unscoped behaviour is identical to before (missing lists = empty lists) 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > checkEligibility with a scope (AC1) > no eligible line → no_eligible_items 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > checkEligibility with a scope (AC1) > minOrderTotal uses the FULL cart subtotal, and is checked before the scope 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > checkEligibility with a scope (AC1) > checks the scope before usage limits 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > selectBestDiscount (AC3) > the bigger discount wins 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > selectBestDiscount (AC3) > a tie goes to the code 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > selectBestDiscount (AC3) > between promotions: earlier validFrom, then lower id 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > selectBestDiscount (AC3) > a discount of 0 never wins 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > promotion window and applicability (AC2) > excludes not started, expired and inactive; validTo is inclusive 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > promotion window and applicability (AC2) > applies a whole-cart percent promotion in any currency 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > promotion window and applicability (AC2) > skips a fixed promotion on a non-EUR cart, and one without an eligible line 0ms
+ ✓ src/features/marketing/tests/discount-rules.scope.test.ts > promotion window and applicability (AC2) > skips a promotion outside its window 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 1: no code → the best promotion applies (appliedBy promotion) 3ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 1: no code and no promotion → nothing (appliedBy null) 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 2: a valid code that gives more wins (appliedBy code, campaignId kept) 1ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 2: on a tie the code wins 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 3: a valid code but the promotion gives more → promotion, campaignId null 1ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 4: invalid code → valid false, zero discounts, plus the promotion object 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > case 4 without a promotion has no promotion field 1ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > picks the biggest of several promotions and skips ones that do not apply 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > validate with automatic promotions (MAR-21) > loads only promotions live now and stays read-only 0ms
+ ✓ src/features/marketing/tests/validate-promotions.test.ts > scoped codes (MAR-21) > a category-scoped fixed code is split over the eligible lines only 0ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > returns valid: true with no discount when code is undefined 2ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > queries usage counts for both limits when code has limits 2ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > queries only total count when code has no per-customer limit 1ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > does not query customer count for guests 1ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > returns usage_limit_reached when total limit is exceeded 1ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > returns customer_limit_reached when per-customer limit is exceeded 3ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > runs no count query when both limits are null 0ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > passes the code and customer to the counts 1ms
+ ✓ src/features/marketing/tests/validate-service.test.ts > validateDiscount > does not query counts when code not found 1ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > maps allowed 23ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > maps unauthenticated 0ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > maps forbidden 0ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > maps invalid 0ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > maps unavailable 0ms
+ ✓ src/features/marketing/tests/session.test.ts > identity mode (default): the shared Admin & Identity login > uses MARKETING_MANAGER_PERMISSION when set 0ms
+ ✓ src/features/marketing/tests/session.test.ts > local mode: Better Auth session + MARKETING_MANAGER_EMAILS > is 401 without a session 0ms
+ ✓ src/features/marketing/tests/session.test.ts > local mode: Better Auth session + MARKETING_MANAGER_EMAILS > allows a listed email (case-insensitive) and forbids others 0ms
+ ✓ src/features/marketing/tests/session.test.ts > local mode: Better Auth session + MARKETING_MANAGER_EMAILS > forbids everyone when the list is empty 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step j: create the 10 % promotion for M1 > accepts a promotion with a period and a product condition 5ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step j: create the 10 % promotion for M1 > rejects missing name 2ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step j: create the 10 % promotion for M1 > rejects end before start 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step j: create the 10 % promotion for M1 > rejects more than 100 % 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step j: create the 10 % promotion for M1 > rejects 0 % 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > applies 10 % to M1, rounded half up (59.90 → 5.99) 1ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > rounds half up per line (0.05 × 10 % = 0.005 → 0.01) 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > does not discount other products in the same cart 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > gives nothing for a cart without M1 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > gives nothing before the period 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > gives nothing after the period 0ms
+ ✓ src/features/marketing/tests/story-j-k.test.ts > step k: buy M1 with the promotion > gives nothing once the promotion is deactivated 0ms
+ ✓ src/features/marketing/tests/normalize-code.test.ts > normalizeCode > stores codes in uppercase so that uniqueness is case-insensitive 2ms
+ ✓ src/features/marketing/tests/normalize-code.test.ts > normalizeCode > ignores surrounding spaces 0ms
+ ✓ src/features/marketing/tests/money.test.ts > money > avoids floating point errors 1ms
+ ✓ src/features/marketing/tests/money.test.ts > money > rounds half up to 2 places 0ms
+ ✓ src/features/marketing/tests/money.test.ts > money > takes a percentage, rounded 0ms
+ ✓ src/features/marketing/tests/money.test.ts > money > serialises to a number with 2 places 0ms
+ ✓ src/features/marketing/tests/money.test.ts > minor units and basis points (shared database) > converts the story-k amounts exactly 0ms
+ ✓ src/features/marketing/tests/money.test.ts > minor units and basis points (shared database) > converts percentages to basis points 0ms
+ ✓ src/features/marketing/tests/money.test.ts > minor units and basis points (shared database) > rejects more than 2 decimal places instead of rounding 0ms
+ ✓ src/features/marketing/tests/discount-rule-mapper.test.ts > discount-rule mapper: shared schema rows → rules (MAR-21) > maps a code and its promotion, scope and limits included 3ms
+ ✓ src/features/marketing/tests/discount-rule-mapper.test.ts > discount-rule mapper: shared schema rows → rules (MAR-21) > a code is inactive when its promotion is inactive 0ms
+ ✓ src/features/marketing/tests/discount-rule-mapper.test.ts > discount-rule mapper: shared schema rows → rules (MAR-21) > a code of a percent promotion without currency works in any currency 0ms
+ ✓ src/features/marketing/tests/discount-rule-mapper.test.ts > discount-rule mapper: shared schema rows → rules (MAR-21) > maps a promotion row: basis points back to percent, no scope = whole cart 0ms
+ ✓ src/features/marketing/tests/discount-rule-mapper.test.ts > discount-rule mapper: shared schema rows → rules (MAR-21) > reads the value column that matches the type 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > accepts a full request 3ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > treats the code "" as absent 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > treats the code "   " as absent 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > strips unknown fields inside an item 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects missing items 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects empty items 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects missing currency 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects lowercase currency 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects quantity 0 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects fractional quantity 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects negative price 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects 3-decimal price 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects empty productId 0ms
+ ✓ src/features/marketing/tests/validate.schema.test.ts > validateRequestSchema > rejects unknown top-level field 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > creates a promotion (201) for a marketing manager 6ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > stores a fixed promotion in minor units (EUR 5.50 → 550) 1ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > rejects a product id that is not in the catalog with 400 and writes nothing 1ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > answers 401 unauthorized and writes nothing when the login check fails 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > answers 403 forbidden and writes nothing when the login check fails 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > answers 503 identity_unavailable and writes nothing when the login check fails 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > rejects a missing field with 400 and the field name 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > rejects malformed JSON with 400 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > answers 404 promotion_not_found for an unknown id 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > answers 400 invalid_id for an empty id 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > deactivates a promotion 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > back-office promotions > lists promotions filtered by active 1ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > public operations > validate rejects an empty cart with 400 1ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > POST /reset > is 404 unless MARKETING_RESET_ENABLED=true 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > POST /reset > needs the token when MARKETING_RESET_TOKEN is set 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > POST /reset > is always 404 in a production build, even when enabled 0ms
+ ✓ src/features/marketing/tests/api-handlers.test.ts > POST /reset > removes Marketing's data, keeps what orders use (deactivated), and reports the counts 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > reason codes > match the contract enum 26ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > accepts an eligible code 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns code_not_found 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns code_inactive 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns code_not_started 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns code_expired 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns currency_mismatch 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > returns min_order_not_reached 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > accepts validFrom exactly now 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > accepts validTo exactly now 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > accepts subtotal equal to minOrderTotal 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > checks inactive before expired 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > checks inactive before not started 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > checks not started before currency 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > checks expired before currency 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility > checks currency before minimum order 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > maxUses 2 with 1 active redemptions 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > maxUses 2 with 2 active redemptions 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > maxUses 2 with 3 active redemptions 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > never limits when maxUses is null 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > maxUsesPerCustomer 1 with 0 redemptions by this customer 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > maxUsesPerCustomer 1 with 1 redemptions by this customer 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > skips the per-customer limit for a guest (forCustomer null) but keeps the total limit 1ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > checks inactive before over limit 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > checks minimum order before over limit 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > checkEligibility usage limits > checks total before customer limit 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > percent > gives 5.99 for 10 % of 29.95 × 2, the contract example 2ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > percent > rounds half up per item before summing 1ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > percent > gives exactly the line total at 100 % 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > percent > caps at the line total 1ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > percent > gives 0 on a zero-price line 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > splits proportionally over two lines and sums to exactly 5.00 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > caps at the subtotal when the amount is larger 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > caps at the subtotal for 10.00 over three lines of 3.33 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > puts a missing cent on the largest line 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > takes an extra cent back from the largest line 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > spreads a remainder that one line cannot take 1ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > gives 0 on a zero-price line 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > gives 0 everywhere when the subtotal is 0 0ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > fixed > holds the invariants across many generated carts 332ms
+ ✓ src/features/marketing/tests/discount-rules.test.ts > free shipping > gives no item discount 0ms
+
+ Test Files  11 passed (11)
+      Tests  145 passed (145)
+   Start at  04:42:40
+   Duration  594ms (import 43%, tests 35%, transform 13%, setup 6%, worker 2%)
+
