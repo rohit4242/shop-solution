@@ -30,3 +30,34 @@ export function sum(values: Decimal.Value[]): Money {
 export function toJson(value: Decimal.Value): number {
   return round2(value).toNumber();
 }
+
+// The shared shop database stores money as integer minor units (cents) and percentages as basis points
+// (prisma/README.md). Our wire format stays a decimal with 2 places (59.90, 10), so these are the only
+// conversions, and they are exact: a value with more than 2 decimal places is rejected, never rounded.
+
+function exactHundredths(value: Decimal.Value, what: string): number {
+  const scaled = new Decimal(value).mul(100);
+  if (!scaled.isInteger())
+    throw new RangeError(`${what} must have at most 2 decimal places.`);
+  return scaled.toNumber();
+}
+
+/** 59.90 → 5990 */
+export function toMinor(value: Decimal.Value): number {
+  return exactHundredths(value, "An amount");
+}
+
+/** 5990 → 59.9 (a Decimal) */
+export function fromMinor(minor: number): Money {
+  return new Decimal(minor).div(100);
+}
+
+/** 10 (%) → 1000 basis points; 12.5 → 1250 */
+export function toBasisPoints(percent: Decimal.Value): number {
+  return exactHundredths(percent, "A percentage");
+}
+
+/** 1000 basis points → 10 (%) */
+export function fromBasisPoints(basisPoints: number): Money {
+  return new Decimal(basisPoints).div(100);
+}

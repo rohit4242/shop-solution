@@ -14,19 +14,24 @@ import {
   type RulePromotion,
   type RuleUsage,
 } from "./discount-rules";
-import { listActivePromotions } from "../repositories/promotion-repository";
+import {
+  listActivePromotions,
+  promotionInclude,
+} from "../repositories/promotion-repository";
 import { countActiveRedemptions } from "../repositories/redemption-repository";
 import type { ValidateRequest } from "../../schemas/validate.schema";
 
+// A code lives in the shared `discount_code` table and takes its discount, period and scope from its promotion.
 async function findRuleCode(code: string) {
-  const record = await db.marketingDiscountCode.findUnique({
+  const record = await db.discountCode.findUnique({
     where: { code: normalizeCode(code) },
+    include: { promotion: { include: promotionInclude } },
   });
   if (!record) return null;
   return {
     id: record.id,
     ruleCode: toRuleCode(record),
-    campaignId: record.campaignId,
+    campaignId: record.promotion.campaignId,
   };
 }
 
@@ -81,7 +86,8 @@ export function bestPromotion(
   return selectBestDiscount(candidates);
 }
 
-// Read-only: redemptions are only counted here, recorded on order.placed, and Storefront owns the order total.
+// Read-only: code uses are only counted here. Checkout stores the applied discount with the order (shared
+// `order_discount`), and Storefront owns the order total.
 // Promotions never create redemptions. The four cases are documented at /discounts/validate in the contract.
 // TODO(MKT-15): use attributionToken for attribution.
 export async function validateDiscount(

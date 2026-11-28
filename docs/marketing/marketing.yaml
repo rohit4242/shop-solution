@@ -1,13 +1,15 @@
 openapi: 3.1.0
 info:
   title: Marketing module API (shop-solution)
-  version: 0.3.0
+  version: 0.4.0
   description: |
     What Marketing provides to other modules in shop-solution. Source of truth: change this file
     first, then the Zod schemas in src/features/marketing/schemas and the handlers.
     Responses wrap the payload in `data`; errors use `{ error: { code, message, fieldErrors? } }`.
     Money is a decimal with 2 places plus a currency (e.g. 59.90 EUR), agreed with CRM and used by
-    Storefront. The repository convention says integer cents; this is open with Accounting.
+    Storefront. The shared shop database stores integer minor units (5990) and percentages as basis
+    points (1000 = 10 %); Marketing converts exactly at this boundary, so the wire format is unchanged.
+    Ids (promotionId, campaignId) are opaque strings (cuids in the shared database).
     Changelog: docs/marketing/CHANGELOG.md.
 servers:
   - url: /api/v1/marketing
@@ -19,14 +21,15 @@ paths:
       security: []
       summary: Check a discount code (and automatic promotions) against a cart
       description: |
-        Called by Storefront at checkout. Does not count a usage; usage is counted on `order.placed`.
+        Called by Storefront at checkout. Read-only: checkout stores the applied discount with the order
+        (shared `order_discount`), and a code's use is counted from those rows.
 
         Rules run in this order and the first failure sets `reasonCode`: code_not_found, code_inactive,
         code_not_started, code_expired (`validTo` is inclusive), currency_mismatch, min_order_not_reached
-        (a subtotal equal to `minOrderTotal` passes), usage_limit_reached (`maxUses` set and active
-        redemptions of the code >= `maxUses`), customer_limit_reached (`maxUsesPerCustomer` set, `customerId`
-        sent, and active redemptions of the code by that customer >= `maxUsesPerCustomer`).
-        Only redemptions with status `active` count; a cancelled order's redemption is reversed and frees the use.
+        (a subtotal equal to `minOrderTotal` passes), usage_limit_reached (`maxUses` set and orders
+        that applied the code >= `maxUses`), customer_limit_reached (`maxUsesPerCustomer` set, `customerId`
+        sent, and that customer's orders that applied the code >= `maxUsesPerCustomer`).
+        Only applied, non-reversed order discounts count; a reversed one frees the use.
         Guests (no `customerId`) skip the per-customer limit; the total limit still applies to them.
 
         After min_order_not_reached comes no_eligible_items (MAR-21): the code is scoped and no cart line
@@ -44,7 +47,7 @@ paths:
         2. Valid code, no promotion gives more: `valid: true`, `appliedBy: code`, `campaignId` as before.
         3. Valid code, a promotion gives more: `valid: true`, `appliedBy: promotion`, `promotionId`,
            `campaignId: null`, the promotion's discounts. Storefront must NOT send `discountCode` in
-           order.placed (no redemption is recorded; promotions never create redemptions).
+           order.placed, and checkout stores the promotion (not the code) with the order.
         4. Invalid code: `valid: false` with the code's `reasonCode`, `discountTotal: 0`, every item
            discount 0, `appliedBy: null`; plus a `promotion` object when a promotion applies, so
            Storefront can show or apply it instead (validate again without the code gives it as case 1).
@@ -182,7 +185,7 @@ paths:
           }
       responses:
         "200":
-          description: Promotions ordered by createdAt descending
+          description: Automatic promotions, latest start (validFrom) first
           content:
             application/json:
               schema:
@@ -202,7 +205,7 @@ paths:
           name: id,
           in: path,
           required: true,
-          schema: { type: string, format: uuid },
+          schema: { type: string, minLength: 1, maxLength: 64 },
         }
     get:
       operationId: getPromotion
@@ -217,7 +220,7 @@ paths:
         "400":
           {
             $ref: "#/components/responses/Error",
-            description: "invalid_id: not a UUID",
+            description: "invalid_id: empty or longer than 64 characters",
           }
         "401": { $ref: "#/components/responses/Error" }
         "403": { $ref: "#/components/responses/Error" }
@@ -256,7 +259,7 @@ paths:
           name: id,
           in: path,
           required: true,
-          schema: { type: string, format: uuid },
+          schema: { type: string, minLength: 1, maxLength: 64 },
         }
     post:
       operationId: deactivatePromotion
@@ -283,10 +286,10 @@ paths:
       security: []
       summary: The discount applied to an order, per item (Accounting, Marketplace; story steps k and o)
       description: |
-        Server to server, no login. Written once when Marketing receives `order.placed`:
-        with a `discountCode` the code's discount, otherwise the best promotion live at order time
-        (same rules as /discounts/validate). 404 when the order got no discount or Marketing never
-        received its `order.placed`. Fields added in 0.3.0: appliedBy, code, promotionId, discountTotal.
+        Server to server, no login. Reads what checkout stored with the order in the shared tables
+        `order_discount` / `order_discount_allocation` (minor units), converted to decimals. Lists every
+        order line; a line without an allocation has discount 0. Reversed discounts are ignored.
+        404 when the order does not exist or got no discount (e.g. the step-f order in story step o).
       parameters:
         - { name: orderId, in: path, required: true, schema: { type: string } }
       responses:
@@ -305,13 +308,13 @@ paths:
                   currency: EUR
                   appliedBy: promotion
                   code: null
-                  promotionId: 7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10
+                  promotionId: cmih3x0q50000ab12cd34ef56
                   discountTotal: 5.99
                   items:
                     [
                       {
                         productId: M1,
-                        offerId: null,
+                        offerId: offer-m1,
                         discount: 5.99,
                         fundedBy: platform,
                       },
@@ -330,11 +333,10 @@ paths:
       description: |
         Handled type: `order.placed` (source `/storefront`). `order.cancelled` is not handled in
         shop-solution yet and is rejected with 400.
-        A resent event (same `source` + `id`) is accepted again but processed only once.
-        With a `discountCode`, one redemption per (code, order) is recorded; an unknown code records
-        nothing; a code that is inactive, expired or over its limit at order time is still recorded,
-        because Storefront already accepted the order. In every case the applied discount is stored
-        for GET /orders/{orderId}/discounts.
+        A resent event (same `source` + `id`) is accepted again but recorded only once (shared
+        `event_receipt`, consumer `marketing`). Marketing does not store a discount or a redemption
+        from it: checkout stores the applied discount with the order. The receipt is kept for later
+        campaign attribution. The order is never rejected.
       requestBody:
         required: true
         content:
@@ -369,16 +371,18 @@ paths:
   /reset:
     post:
       operationId: resetMarketing
-      summary: Empty all Marketing data (system tests, agent runs, demo)
+      summary: Remove Marketing's data (system tests, agent runs, demo)
       description: |
-        Deletes every row in Marketing's tables (promotions, codes, redemptions, order discounts,
-        received events). Never touches another module's data. Marketing has no seed data.
+        Deletes promotions (with their product/category scope), discount codes and Marketing's event
+        receipts. A promotion or code that an order already used is kept, because checkout's
+        `order_discount` rows and invoices point at it, and is deactivated instead. Orders, catalog and
+        other modules' data are never touched. Marketing has no seed data.
         Off (404) unless the server sets MARKETING_RESET_ENABLED=true. When MARKETING_RESET_TOKEN is
         set, send `Authorization: Bearer <token>`.
       security: [{}, { ResetToken: [] }]
       responses:
         "200":
-          description: Reset done, with the number of deleted rows per table
+          description: Reset done, with the number of deleted and deactivated rows
           content:
             application/json:
               schema:
@@ -390,17 +394,15 @@ paths:
                       deleted:
                         type: object
                         additionalProperties: { type: integer }
+                      deactivated:
+                        type: object
+                        additionalProperties: { type: integer }
               example:
                 data:
                   {
                     deleted:
-                      {
-                        orderDiscounts: 1,
-                        redemptions: 0,
-                        discountCodes: 0,
-                        promotions: 1,
-                        receivedEvents: 1,
-                      },
+                      { promotions: 1, discountCodes: 0, eventReceipts: 1 },
+                    deactivated: { promotions: 0, discountCodes: 0 },
                   }
         "401": { $ref: "#/components/responses/Error" }
         "404": { $ref: "#/components/responses/Error" }
@@ -499,7 +501,6 @@ components:
         campaignId:
           {
             type: [string, "null"],
-            format: uuid,
             description: "Only when appliedBy is code and the code belongs to a campaign",
           }
         appliedBy:
@@ -509,7 +510,6 @@ components:
         promotionId:
           {
             type: [string, "null"],
-            format: uuid,
             description: "Set when appliedBy is promotion",
           }
         items:
@@ -526,7 +526,7 @@ components:
       type: object
       required: [promotionId, name, discountTotal, items]
       properties:
-        promotionId: { type: string, format: uuid }
+        promotionId: { type: string, minLength: 1, maxLength: 64 }
         name: { type: string }
         discountTotal: { type: number }
         items:
@@ -552,7 +552,7 @@ components:
           validTo,
         ]
       properties:
-        promotionId: { type: string, format: uuid }
+        promotionId: { type: string, minLength: 1, maxLength: 64 }
         name: { type: string }
         description: { type: string }
         type: { type: string, enum: [percent, fixed] }
@@ -604,14 +604,14 @@ components:
             type: array,
             maxItems: 100,
             items: { type: string, minLength: 1 },
-            description: Trimmed and de-duplicated,
+            description: "Catalog Product ids (shared product table), trimmed and de-duplicated. An unknown id is a 400 with fieldErrors.productIds",
           }
         categoryIds:
           {
             type: array,
             maxItems: 100,
             items: { type: string, minLength: 1 },
-            description: Trimmed and de-duplicated,
+            description: "Catalog Category ids, trimmed and de-duplicated. An unknown id is a 400 with fieldErrors.categoryIds",
           }
     PromotionUpdate:
       type: object
@@ -640,11 +640,9 @@ components:
       allOf:
         - { $ref: "#/components/schemas/Promotion" }
         - type: object
-          required: [active, createdAt, updatedAt]
+          required: [active]
           properties:
             active: { type: boolean }
-            createdAt: { type: string, format: date-time }
-            updatedAt: { type: string, format: date-time }
     PromotionAdminResponse:
       type: object
       required: [data]
@@ -685,7 +683,7 @@ components:
             type: [string, "null"],
             description: "The code, uppercase, when appliedBy is code",
           }
-        promotionId: { type: [string, "null"], format: uuid }
+        promotionId: { type: [string, "null"] }
         discountTotal: { type: number, example: 5.99 }
         items:
           type: array
@@ -694,6 +692,6 @@ components:
             type: object
             properties:
               productId: { type: string }
-              offerId: { type: [string, "null"] }
+              offerId: { type: string }
               discount: { type: number, example: 5.99 }
               fundedBy: { type: string, enum: [platform] }

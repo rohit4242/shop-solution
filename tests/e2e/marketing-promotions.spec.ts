@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 // Marketing, story step j in the UI. Needs a database and a local login, so it runs only with
 // MARKETING_E2E=1 against an app started with MARKETING_AUTH_MODE=local,
 // MARKETING_MANAGER_EMAILS=manager@shop.test and MARKETING_RESET_ENABLED=true.
-// See src/features/marketing/README.md ("Tests"). The tests do not reset (they may run in parallel);
+// See src/features/marketing/README.md ("Verification"). The tests do not reset (they may run in parallel);
 // each one uses its own promotion name and checks only that promotion.
 
 const enabled = process.env.MARKETING_E2E === "1";

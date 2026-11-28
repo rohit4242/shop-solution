@@ -4,22 +4,30 @@ import type { Prisma } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import { toRulePromotion } from "../services/discount-rule-mapper";
 
+/** Scope relations every promotion read needs (shared tables promotion_product / promotion_category). */
+export const promotionInclude = {
+  products: { select: { productId: true }, orderBy: { productId: "asc" } },
+  categories: { select: { categoryId: true }, orderBy: { categoryId: "asc" } },
+} as const satisfies Prisma.PromotionInclude;
+
 /**
- * Promotions that are active and inside their window at `now` (validTo inclusive), newest validFrom
- * first. Read-only; loaded once per validate call. The pure rules (isPromotionLive) check the window again.
- * Pass the transaction client when called inside the order.placed transaction.
+ * Automatic promotions (no code needed) that are active and inside their window at `now` (endsAt
+ * inclusive), newest start first. A promotion that only backs discount codes (automatic = false) never
+ * applies on its own. The pure rules (isPromotionLive) check the window again.
  */
 export function findActivePromotionRecords(
   now: Date,
   client: Prisma.TransactionClient = db,
 ) {
-  return client.marketingPromotion.findMany({
+  return client.promotion.findMany({
     where: {
+      automatic: true,
       active: true,
-      validFrom: { lte: now },
-      OR: [{ validTo: null }, { validTo: { gte: now } }],
+      startsAt: { lte: now },
+      OR: [{ endsAt: null }, { endsAt: { gte: now } }],
     },
-    orderBy: [{ validFrom: "desc" }, { id: "asc" }],
+    include: promotionInclude,
+    orderBy: [{ startsAt: "desc" }, { id: "asc" }],
   });
 }
 

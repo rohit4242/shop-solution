@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Prisma, type MarketingPromotion } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import {
   createPromotionHandler,
@@ -12,6 +11,7 @@ import {
   validateDiscountHandler,
 } from "../server";
 import { checkMarketingManager } from "../server/session";
+import { promotionRow } from "./fixtures";
 
 // HTTP behaviour of the operations in docs/marketing/marketing.yaml: auth, validation, errors.
 
@@ -22,37 +22,38 @@ vi.mock("next/server", async (importOriginal) => ({
 vi.mock("../server/session", () => ({ checkMarketingManager: vi.fn() }));
 vi.mock("@/server/db", () => ({
   db: {
-    marketingPromotion: {
+    promotion: {
       create: vi.fn(),
       findMany: vi.fn(),
-      findUnique: vi.fn(),
+      findFirst: vi.fn(),
       update: vi.fn(),
       deleteMany: vi.fn(),
+      updateMany: vi.fn(),
     },
-    marketingDiscountCode: { findUnique: vi.fn(), deleteMany: vi.fn() },
-    marketingRedemption: { count: vi.fn(), deleteMany: vi.fn() },
-    marketingOrderDiscount: { findUnique: vi.fn(), deleteMany: vi.fn() },
-    marketingReceivedEvent: { deleteMany: vi.fn() },
+    product: { findMany: vi.fn() },
+    category: { findMany: vi.fn() },
+    discountCode: {
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    orderDiscount: { count: vi.fn() },
+    order: { findUnique: vi.fn() },
+    eventReceipt: { createMany: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
 
-const ID = "7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10";
+const ID = "promo-m1";
 const at = new Date("2026-12-01T00:00:00.000Z");
-const record: MarketingPromotion = {
+const record = promotionRow({
   id: ID,
   name: "M1 10 %",
   description: "10 % off M1",
-  type: "percent",
-  value: new Prisma.Decimal("10"),
+  value: "10",
   productIds: ["M1"],
-  categoryIds: [],
   validFrom: at,
-  validTo: null,
-  active: true,
-  createdAt: at,
-  updatedAt: at,
-};
+});
 const body = {
   name: "M1 10 %",
   description: "10 % off M1",
@@ -87,11 +88,12 @@ const json = async (response: Response) => ({
 beforeEach(() => {
   vi.resetAllMocks();
   vi.mocked(checkMarketingManager).mockResolvedValue({ ok: true });
+  vi.mocked(db.product.findMany).mockResolvedValue([{ id: "M1" }] as never);
 });
 
 describe("back-office promotions", () => {
   it("creates a promotion (201) for a marketing manager", async () => {
-    vi.mocked(db.marketingPromotion.create).mockResolvedValue(record);
+    vi.mocked(db.promotion.create).mockResolvedValue(record);
     const { status, body: res } = await json(
       await createPromotionHandler(req("POST", "/promotions", body)),
     );
@@ -102,6 +104,39 @@ describe("back-office promotions", () => {
       productIds: ["M1"],
       active: true,
     });
+    // Stored in the shared format: basis points, an automatic promotion, M1 as a promotion_product row.
+    expect(vi.mocked(db.promotion.create).mock.calls[0][0].data).toMatchObject({
+      type: "PERCENT",
+      percentBasisPoints: 1000,
+      fixedMinor: null,
+      automatic: true,
+      products: { create: [{ productId: "M1" }] },
+    });
+  });
+
+  it("stores a fixed promotion in minor units (EUR 5.50 → 550)", async () => {
+    vi.mocked(db.promotion.create).mockResolvedValue(
+      promotionRow({ type: "fixed", value: "5.5" }),
+    );
+    await createPromotionHandler(
+      req("POST", "/promotions", { ...body, type: "fixed", value: 5.5 }),
+    );
+    expect(vi.mocked(db.promotion.create).mock.calls[0][0].data).toMatchObject({
+      type: "FIXED",
+      fixedMinor: 550,
+      percentBasisPoints: null,
+      currency: "EUR",
+    });
+  });
+
+  it("rejects a product id that is not in the catalog with 400 and writes nothing", async () => {
+    vi.mocked(db.product.findMany).mockResolvedValue([]);
+    const { status, body: res } = await json(
+      await createPromotionHandler(req("POST", "/promotions", body)),
+    );
+    expect(status).toBe(400);
+    expect(res.error.fieldErrors.productIds[0]).toContain("M1");
+    expect(db.promotion.create).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -120,7 +155,7 @@ describe("back-office promotions", () => {
       );
       expect(status).toBe(code);
       expect(res.error.code).toBe(errorCode);
-      expect(db.marketingPromotion.create).not.toHaveBeenCalled();
+      expect(db.promotion.create).not.toHaveBeenCalled();
     },
   );
 
@@ -143,7 +178,7 @@ describe("back-office promotions", () => {
   });
 
   it("answers 404 promotion_not_found for an unknown id", async () => {
-    vi.mocked(db.marketingPromotion.findUnique).mockResolvedValue(null);
+    vi.mocked(db.promotion.findFirst).mockResolvedValue(null);
     const { status, body: res } = await json(
       await getPromotionHandler(req("GET", `/promotions/${ID}`), ctx()),
     );
@@ -151,11 +186,11 @@ describe("back-office promotions", () => {
     expect(res.error.code).toBe("promotion_not_found");
   });
 
-  it("answers 400 invalid_id for an id that is not a UUID", async () => {
+  it("answers 400 invalid_id for an empty id", async () => {
     const { status, body: res } = await json(
       await deactivatePromotionHandler(
-        req("POST", "/promotions/x/deactivate"),
-        ctx("x"),
+        req("POST", "/promotions/%20/deactivate"),
+        ctx(" "),
       ),
     );
     expect(status).toBe(400);
@@ -163,7 +198,8 @@ describe("back-office promotions", () => {
   });
 
   it("deactivates a promotion", async () => {
-    vi.mocked(db.marketingPromotion.update).mockResolvedValue({
+    vi.mocked(db.promotion.findFirst).mockResolvedValue(record);
+    vi.mocked(db.promotion.update).mockResolvedValue({
       ...record,
       active: false,
     });
@@ -178,13 +214,14 @@ describe("back-office promotions", () => {
   });
 
   it("lists promotions filtered by active", async () => {
-    vi.mocked(db.marketingPromotion.findMany).mockResolvedValue([record]);
+    vi.mocked(db.promotion.findMany).mockResolvedValue([record]);
     const { status } = await json(
       await listPromotionsHandler(req("GET", "/promotions?active=true")),
     );
     expect(status).toBe(200);
-    expect(db.marketingPromotion.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { active: true } }),
+    // Only automatic promotions; promotions behind discount codes are not listed here.
+    expect(db.promotion.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { automatic: true, active: true } }),
     );
   });
 });
@@ -201,7 +238,7 @@ describe("public operations", () => {
   });
 
   it("order discounts answers 404 when the order got no discount", async () => {
-    vi.mocked(db.marketingOrderDiscount.findUnique).mockResolvedValue(null);
+    vi.mocked(db.order.findUnique).mockResolvedValue(null);
     const response = await orderDiscountsHandler(
       req("GET", "/orders/o-1/discounts"),
       { params: Promise.resolve({ orderId: "o-1" }) },
@@ -209,6 +246,33 @@ describe("public operations", () => {
     expect((await json(response)).body.error.code).toBe(
       "order_discount_not_found",
     );
+  });
+
+  it("events accepts order.placed (202) and acknowledges a resend without error", async () => {
+    const event = {
+      specversion: "1.0",
+      type: "order.placed",
+      source: "/storefront",
+      id: "e-1",
+      data: {
+        orderId: "o-1",
+        items: [{ productId: "M1", unitPrice: 59.9, quantity: 1 }],
+        total: 53.91,
+        currency: "EUR",
+      },
+    };
+    vi.mocked(db.eventReceipt.createMany)
+      .mockResolvedValueOnce({ count: 1 })
+      .mockResolvedValueOnce({ count: 0 });
+    for (let delivery = 0; delivery < 2; delivery += 1) {
+      const response = await receiveEventHandler(req("POST", "/events", event));
+      expect(response.status).toBe(202);
+      expect((await response.json()).data).toEqual({ id: "e-1" });
+    }
+    expect(vi.mocked(db.eventReceipt.createMany).mock.calls[0][0]).toEqual({
+      data: [{ consumer: "marketing", source: "/storefront", eventId: "e-1" }],
+      skipDuplicates: true,
+    });
   });
 
   it("events rejects order.cancelled (not handled in shop-solution yet) with 400", async () => {
@@ -247,14 +311,14 @@ describe("POST /reset", () => {
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
-  it("empties every Marketing table and reports the counts", async () => {
+  it("removes Marketing's data, keeps what orders use (deactivated), and reports the counts", async () => {
     vi.stubEnv("MARKETING_RESET_ENABLED", "true");
     vi.stubEnv("MARKETING_RESET_TOKEN", "secret-token");
     vi.mocked(db.$transaction).mockResolvedValue([
       { count: 1 },
       { count: 0 },
-      { count: 0 },
       { count: 2 },
+      { count: 0 },
       { count: 1 },
     ] as never);
     const { status, body: res } = await json(
@@ -265,12 +329,19 @@ describe("POST /reset", () => {
       ),
     );
     expect(status).toBe(200);
-    expect(res.data.deleted).toEqual({
-      orderDiscounts: 1,
-      redemptions: 0,
-      discountCodes: 0,
-      promotions: 2,
-      receivedEvents: 1,
+    expect(res.data).toEqual({
+      deleted: { promotions: 2, discountCodes: 0, eventReceipts: 1 },
+      deactivated: { promotions: 1, discountCodes: 0 },
+    });
+    // Only Marketing's own receipts, and only rows no order points at, are deleted.
+    expect(db.eventReceipt.deleteMany).toHaveBeenCalledWith({
+      where: { consumer: "marketing" },
+    });
+    expect(db.promotion.deleteMany).toHaveBeenCalledWith({
+      where: { applications: { none: {} }, codes: { none: {} } },
+    });
+    expect(db.discountCode.deleteMany).toHaveBeenCalledWith({
+      where: { applications: { none: {} } },
     });
   });
 });

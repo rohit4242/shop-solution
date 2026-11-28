@@ -26,7 +26,8 @@ export type RuleScope = { productIds?: string[]; categoryIds?: string[] };
 export type RuleCode = RuleScope & {
   type: "percent" | "fixed" | "free_shipping";
   value: string;
-  currency: string;
+  // null = any currency (a code of a percent promotion; the shared schema stores no currency for those).
+  currency: string | null;
   validFrom: Date;
   validTo: Date | null;
   minOrderTotal: string | null;
@@ -94,7 +95,7 @@ export function checkEligibility(
   if (now < code.validFrom) return reject(VALIDATE_REASON_CODES.codeNotStarted);
   if (code.validTo && now > code.validTo)
     return reject(VALIDATE_REASON_CODES.codeExpired);
-  if (cart.currency !== code.currency)
+  if (code.currency !== null && cart.currency !== code.currency)
     return reject(VALIDATE_REASON_CODES.currencyMismatch);
   // minOrderTotal always uses the FULL cart subtotal, also for a scoped code (MAR-21).
   if (
@@ -227,8 +228,8 @@ function beats(a: DiscountCandidate, b: DiscountCandidate) {
 
 /**
  * Discount of one promotion for a cart, or null when it does not apply: outside its window, no eligible
- * line, or a fixed promotion on a non-EUR cart. Promotions have no currency column, so fixed values are
- * EUR. TODO(MKT-21/MAR-25): a currency per promotion would lift this limitation.
+ * line, or a fixed promotion on a non-EUR cart. Fixed promotions are created in EUR only (the API has no
+ * currency field yet); the shared schema stores that currency on the promotion.
  */
 export function promotionDiscount(
   promotion: RulePromotion,

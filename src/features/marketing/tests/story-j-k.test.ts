@@ -1,43 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Prisma, type MarketingPromotion } from "@/generated/prisma/client";
 import { db } from "@/server/db";
 import { promotionCreateSchema } from "../schemas/promotion.schema";
 import { validateDiscount } from "../server/services/validate-service";
+import { promotionRow } from "./fixtures";
 
 // Story steps j and k at module level (Level 1): a 10 % promotion for product M1, then a cart with M1.
 // M1's real product id comes from the catalog owner; "M1" stands in for it here.
 
 vi.mock("@/server/db", () => ({
   db: {
-    marketingDiscountCode: { findUnique: vi.fn() },
-    marketingPromotion: { findMany: vi.fn() },
-    marketingRedemption: { count: vi.fn() },
+    discountCode: { findUnique: vi.fn() },
+    promotion: { findMany: vi.fn() },
+    orderDiscount: { count: vi.fn() },
   },
 }));
 
 const M1 = "M1";
 const now = new Date("2026-12-01T10:00:00.000Z");
-const m1Promotion = (
-  overrides: Partial<MarketingPromotion> = {},
-): MarketingPromotion => ({
-  id: "7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10",
-  name: "M1 10 %",
-  description: "10 % off M1 in December",
-  type: "percent",
-  value: new Prisma.Decimal("10"),
-  productIds: [M1],
-  categoryIds: [],
-  validFrom: new Date("2026-12-01T00:00:00.000Z"),
-  validTo: new Date("2026-12-31T23:59:59.000Z"),
-  active: true,
-  createdAt: now,
-  updatedAt: now,
-  ...overrides,
-});
+const m1Promotion = (overrides: Parameters<typeof promotionRow>[0] = {}) =>
+  promotionRow({
+    id: "promo-m1",
+    name: "M1 10 %",
+    description: "10 % off M1 in December",
+    value: "10",
+    productIds: [M1],
+    validFrom: new Date("2026-12-01T00:00:00.000Z"),
+    validTo: new Date("2026-12-31T23:59:59.000Z"),
+    ...overrides,
+  });
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(db.marketingPromotion.findMany).mockResolvedValue([m1Promotion()]);
+  vi.mocked(db.promotion.findMany).mockResolvedValue([m1Promotion()]);
 });
 
 describe("step j: create the 10 % promotion for M1", () => {
@@ -140,7 +134,7 @@ describe("step k: buy M1 with the promotion", () => {
   });
 
   it("gives nothing once the promotion is deactivated", async () => {
-    vi.mocked(db.marketingPromotion.findMany).mockResolvedValue([
+    vi.mocked(db.promotion.findMany).mockResolvedValue([
       m1Promotion({ active: false }),
     ]);
     const result = await validateDiscount(

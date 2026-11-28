@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import {
   promotionCreateSchema,
+  promotionIdSchema,
   promotionUpdateSchema,
 } from "../../schemas/promotion.schema";
 import { validateRequestSchema } from "../../schemas/validate.schema";
@@ -101,7 +102,7 @@ export const marketingTools = {
   create_promotion: {
     description:
       'Create an automatic promotion (no code needed at checkout). type "percent" (value 10 = 10 %) or "fixed" (EUR off). ' +
-      "productIds/categoryIds restrict it to those items; both empty = whole cart. validFrom/validTo are ISO 8601 date-times " +
+      "productIds/categoryIds (catalog ids; unknown ids are rejected) restrict it to those items; both empty = whole cart. validFrom/validTo are ISO 8601 date-times " +
       'with time zone, e.g. "2026-12-31T23:59:59+01:00"; validFrom defaults to now. Only the biggest discount applies per cart, ' +
       "promotions never stack. Returns the created promotion.",
     schema: z.strictObject({
@@ -134,7 +135,7 @@ export const marketingTools = {
       "{ promotionId, value: 10 }; every other field (period, products, name) stays as it is. Prefer this over creating a " +
       "new promotion when the user asks to change, raise or extend one. Returns the updated promotion.",
     schema: z.strictObject({
-      promotionId: z.uuid(),
+      promotionId: promotionIdSchema,
       name: z.string().min(1).max(100).optional(),
       description: z.string().min(1).max(500).optional(),
       type: z.enum(["percent", "fixed"]).optional(),
@@ -161,7 +162,7 @@ export const marketingTools = {
   deactivate_promotion: {
     description:
       "Deactivate a promotion by promotionId (from list_promotions). It stops applying immediately; promotions are never deleted. Idempotent.",
-    schema: z.strictObject({ promotionId: z.uuid() }),
+    schema: z.strictObject({ promotionId: promotionIdSchema }),
     readOnly: false,
     run: ({ promotionId }: { promotionId: string }) =>
       guarded(async () => result(await deactivatePromotion(promotionId))),
@@ -189,7 +190,7 @@ export const marketingTools = {
   },
   get_order_discount: {
     description:
-      "The discount stored for a placed order (what Accounting puts on the invoice), per item. Returns order_discount_not_found when the order got no discount. Read-only.",
+      "The discount checkout stored with a placed order (what Accounting puts on the invoice), per item. Returns order_discount_not_found when the order does not exist or got no discount. Read-only.",
     schema: z.strictObject({ orderId: z.string().min(1) }),
     readOnly: true,
     run: ({ orderId }: { orderId: string }) =>

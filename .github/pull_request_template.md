@@ -1,18 +1,27 @@
 ## Change
 
-Describe the problem and resulting behavior.
+Describe the problem, the resulting behavior, and the issue or task link. For a stacked PR, list its dependencies and identify the changes introduced here.
 
 ## Ownership and integration
 
-Owning team, affected features, contract changes and migration impact.
+Name the owning team and affected teams. Link the contract or feature README and describe any compatibility changes.
+
+## Database impact
+
+Write “None” when the database is unaffected. Otherwise list the migration, affected shared models and consumers, and any backfill or rollout steps. Record which existing data and fresh databases were tested.
 
 ## Verification
 
-Commands run and results; screenshots for visible changes when useful.
+List commands run, results, and checks still pending. Add screenshots for visible changes when useful.
+
+## Documentation
+
+Link the affected feature README, API contract, or setup guide. If the PR only changes internal implementation, briefly explain why the existing documentation still applies.
 
 ## Review checklist
 
 - [ ] Feature boundaries and server/client separation respected
 - [ ] Authorization and input validation addressed where relevant
-- [ ] Tests and documentation updated where relevant
+- [ ] Ran `pnpm docs:check` and updated affected docs and tests
+- [ ] Requested review from two people in different groups outside the author's group and included affected owners where needed
 - [ ] No secrets committed

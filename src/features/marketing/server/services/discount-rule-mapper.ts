@@ -1,60 +1,96 @@
 import type {
-  MarketingDiscountCode as DiscountCode,
-  MarketingPromotion as Promotion,
+  DiscountCode,
+  DiscountType,
+  Promotion,
 } from "@/generated/prisma/client";
+import { fromBasisPoints, fromMinor } from "../../utils/money";
 import type { RuleCode, RulePromotion } from "./discount-rules";
 
-// The one place where database rows become rule inputs (MAR-21). validate.service.ts and
-// redemption.service.ts both use it, so the redeemed amount always equals the validated amount
-// for the same cart. Pure: no database access here.
+// The one place where rows of the shared shop schema become rule inputs (MAR-21). Validate and the
+// order-discount read both use it, so the same promotion always gives the same amount. Pure: no
+// database access here.
+//
+// Shared schema → rules: amounts are minor units (5990) and percentages basis points (1000); the rules
+// work in decimals (59.90, 10), exactly like the wire contract.
 
-type CodeRecord = Pick<
-  DiscountCode,
-  | "type"
-  | "value"
-  | "currency"
-  | "validFrom"
-  | "validTo"
-  | "minOrderTotal"
-  | "active"
-  | "maxUses"
-  | "maxUsesPerCustomer"
-> &
-  Partial<Pick<DiscountCode, "productIds" | "categoryIds">>;
-
-type PromotionRecord = Pick<
+export type PromotionWithScope = Pick<
   Promotion,
-  "id" | "name" | "type" | "value" | "validFrom" | "validTo" | "active"
-> &
-  Partial<Pick<Promotion, "productIds" | "categoryIds">>;
+  | "id"
+  | "name"
+  | "type"
+  | "percentBasisPoints"
+  | "fixedMinor"
+  | "currency"
+  | "active"
+  | "startsAt"
+  | "endsAt"
+> & {
+  products?: { productId: string }[];
+  categories?: { categoryId: string }[];
+};
 
-export function toRuleCode(record: CodeRecord): RuleCode {
+export type CodeWithPromotion = Pick<
+  DiscountCode,
+  "maxUses" | "maxUsesPerCustomer" | "minOrderTotalMinor" | "active"
+> & { promotion: PromotionWithScope };
+
+const RULE_TYPES = {
+  PERCENT: "percent",
+  FIXED: "fixed",
+  FREE_SHIPPING: "free_shipping",
+} as const satisfies Record<DiscountType, RulePromotion["type"]>;
+
+export function toRuleType(type: DiscountType) {
+  return RULE_TYPES[type];
+}
+
+/** The decimal value the rules and the API use: 10 for 10 %, 5.5 for EUR 5.50 off. */
+export function promotionValue(
+  record: Pick<Promotion, "type" | "percentBasisPoints" | "fixedMinor">,
+) {
+  if (record.type === "PERCENT")
+    return fromBasisPoints(record.percentBasisPoints ?? 0);
+  if (record.type === "FIXED") return fromMinor(record.fixedMinor ?? 0);
+  return fromMinor(0);
+}
+
+function scope(record: PromotionWithScope) {
   return {
-    type: record.type,
-    value: record.value.toString(),
-    currency: record.currency,
-    validFrom: record.validFrom,
-    validTo: record.validTo,
-    minOrderTotal: record.minOrderTotal?.toString() ?? null,
-    active: record.active,
-    maxUses: record.maxUses,
-    maxUsesPerCustomer: record.maxUsesPerCustomer,
-    // Rows from before the migration (and Postgres NULL arrays) are unscoped.
-    productIds: record.productIds ?? [],
-    categoryIds: record.categoryIds ?? [],
+    productIds: (record.products ?? []).map((p) => p.productId),
+    categoryIds: (record.categories ?? []).map((c) => c.categoryId),
   };
 }
 
-export function toRulePromotion(record: PromotionRecord): RulePromotion {
+export function toRulePromotion(record: PromotionWithScope): RulePromotion {
   return {
     id: record.id,
     name: record.name,
-    type: record.type,
-    value: record.value.toString(),
-    validFrom: record.validFrom,
-    validTo: record.validTo,
+    type: toRuleType(record.type),
+    value: promotionValue(record).toString(),
+    validFrom: record.startsAt,
+    validTo: record.endsAt,
     active: record.active,
-    productIds: record.productIds ?? [],
-    categoryIds: record.categoryIds ?? [],
+    ...scope(record),
+  };
+}
+
+/** A code takes its discount, period and scope from its promotion, and its limits from itself. */
+export function toRuleCode(record: CodeWithPromotion): RuleCode {
+  const { promotion } = record;
+  return {
+    type: toRuleType(promotion.type),
+    value: promotionValue(promotion).toString(),
+    // A percent promotion has no currency, so its codes work in every currency.
+    currency: promotion.currency,
+    validFrom: promotion.startsAt,
+    validTo: promotion.endsAt,
+    minOrderTotal:
+      record.minOrderTotalMinor == null
+        ? null
+        : fromMinor(record.minOrderTotalMinor).toString(),
+    active: record.active && promotion.active,
+    maxUses: record.maxUses,
+    maxUsesPerCustomer: record.maxUsesPerCustomer,
+    ...scope(promotion),
   };
 }

@@ -335,7 +335,7 @@ for (const id of [...new Set(records.map((r) => r.scenario))]) {
     0,
   );
   console.log(
-    `${id}: ${pass}/${runs.length} pass · "done" but failed: ${lied} · avg tokens ${Math.round(tokens / runs.length)}`,
+    `${id}: ${pass}/${runs.length} pass · "done" but failed: ${lied} · harness errors: ${errors} · avg tokens ${Math.round(tokens / runs.length)}`,
   );
 }
 if (OUT)

@@ -2,7 +2,43 @@
 
 Contract: [`marketing.yaml`](marketing.yaml) (OpenAPI 3.1), served under `/api/v1/marketing`.
 
-## 0.3.0 (27 Nov 2026): first version in shop-solution
+## 0.4.0 (28 Nov 2026): on the shared shop database
+
+Marketing now uses the canonical shop schema that `main` adopted on 28 Nov (PR #29) instead of its own
+`marketing_*` tables. Field names and the decimal money format on the wire are unchanged. Not released
+before: 0.3.0 only existed in the draft PR #23.
+
+### Changed
+
+- Storage: promotions in `promotion`, `promotion_product`, `promotion_category`; codes in `discount_code`;
+  order events in `event_receipt` (consumer `marketing`). Amounts are stored as minor units and percentages
+  as basis points; Marketing converts exactly at the API boundary (`59.90` ↔ `5990`, `10` ↔ `1000`) and
+  rejects more than 2 decimal places instead of rounding.
+- `promotionId` and `campaignId` are opaque strings (cuids), no longer UUIDs. `invalid_id` now means an
+  empty or over-long id.
+- `productIds` / `categoryIds` must be ids from the shared catalog. An unknown id is a 400 with
+  `fieldErrors.productIds` (or `categoryIds`) instead of being stored.
+- `GET /orders/{orderId}/discounts` reads what checkout stored with the order (`order_discount`,
+  `order_discount_allocation`). It lists every order line, with `offerId` always set. Reversed discounts
+  are ignored. 404 also when the order does not exist.
+- `POST /events` acknowledges `order.placed` once per event id. It no longer stores a discount or a
+  redemption: checkout records the applied discount with the order, and code use is counted from those rows.
+- `POST /reset` removes promotions, codes and Marketing's event receipts. Rows that an order already uses are
+  deactivated instead of deleted; the response has `deleted` and `deactivated` counts.
+- `PromotionAdmin` no longer has `createdAt` / `updatedAt` (the shared table has no such columns). Lists are
+  ordered by `validFrom`, newest first.
+
+### Added
+
+- `description` column on the shared `promotion` table (nullable, migration
+  `20261128180000_promotion_description`), so promotions keep their customer-facing text.
+
+### Settled
+
+- Money format: integer minor units in the database, decimals on Marketing's API.
+- Who writes the order's discount: checkout, in `order_discount`; Accounting and Marketing read it.
+
+## 0.3.0 (27 Nov 2026): first version in shop-solution (draft only)
 
 Moves the operations that story steps j, k and o need from the Marketing team's own repository into
 shop-solution. Field names and behaviour are unchanged unless listed below.

@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { validateDiscount } from "../server/services/validate-service";
 import * as redemptionRepo from "../server/repositories/redemption-repository";
 import type { ValidateRequest } from "../schemas/validate.schema";
+import { codeRow } from "./fixtures";
 
 vi.mock("@/server/db", () => ({
   db: {
-    marketingDiscountCode: {
+    discountCode: {
       findUnique: vi.fn(),
     },
     // MAR-21: validate also loads active promotions; none here.
-    marketingPromotion: { findMany: vi.fn(async () => []) },
+    promotion: { findMany: vi.fn(async () => []) },
   },
 }));
 
@@ -46,22 +46,22 @@ describe("validateDiscount", () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
     const codeId = "code-123";
 
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: codeId,
-      code: "LIMIT5",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 5,
-      maxUsesPerCustomer: 2,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: codeId,
+        code: "LIMIT5",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 5,
+        maxUsesPerCustomer: 2,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     vi.mocked(redemptionRepo.countActiveRedemptions)
       .mockResolvedValueOnce(0) // total count
@@ -86,22 +86,22 @@ describe("validateDiscount", () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
     const codeId = "code-123";
 
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: codeId,
-      code: "TOTAL_ONLY",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 5,
-      maxUsesPerCustomer: null,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: codeId,
+        code: "TOTAL_ONLY",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 5,
+        maxUsesPerCustomer: null,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     vi.mocked(redemptionRepo.countActiveRedemptions).mockResolvedValueOnce(1);
 
@@ -124,22 +124,22 @@ describe("validateDiscount", () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
     const codeId = "code-123";
 
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: codeId,
-      code: "GUEST_TEST",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 5,
-      maxUsesPerCustomer: 2,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: codeId,
+        code: "GUEST_TEST",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 5,
+        maxUsesPerCustomer: 2,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     vi.mocked(redemptionRepo.countActiveRedemptions).mockResolvedValueOnce(0);
 
@@ -164,22 +164,22 @@ describe("validateDiscount", () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
     const codeId = "code-123";
 
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: codeId,
-      code: "LIMITED",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 2,
-      maxUsesPerCustomer: null,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: codeId,
+        code: "LIMITED",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 2,
+        maxUsesPerCustomer: null,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     vi.mocked(redemptionRepo.countActiveRedemptions).mockResolvedValueOnce(2);
 
@@ -192,7 +192,7 @@ describe("validateDiscount", () => {
     const result = await validateDiscount(request, now);
 
     expect(result.valid).toBe(false);
-    expect((result as any).reasonCode).toBe("usage_limit_reached");
+    expect(result).toMatchObject({ reasonCode: "usage_limit_reached" });
     expect(result.discountTotal).toBe(0);
   });
 
@@ -200,22 +200,22 @@ describe("validateDiscount", () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
     const codeId = "code-123";
 
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: codeId,
-      code: "PERUSER",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 100,
-      maxUsesPerCustomer: 1,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: codeId,
+        code: "PERUSER",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 100,
+        maxUsesPerCustomer: 1,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     vi.mocked(redemptionRepo.countActiveRedemptions)
       .mockResolvedValueOnce(0) // total
@@ -231,28 +231,28 @@ describe("validateDiscount", () => {
     const result = await validateDiscount(request, now);
 
     expect(result.valid).toBe(false);
-    expect((result as any).reasonCode).toBe("customer_limit_reached");
+    expect(result).toMatchObject({ reasonCode: "customer_limit_reached" });
     expect(result.discountTotal).toBe(0);
   });
 
   it("runs no count query when both limits are null", async () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: "code-123",
-      code: "NOLIMIT",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: null,
-      maxUsesPerCustomer: null,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: "code-123",
+        code: "NOLIMIT",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: null,
+        maxUsesPerCustomer: null,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
 
     const result = await validateDiscount(
       {
@@ -272,22 +272,22 @@ describe("validateDiscount", () => {
 
   it("passes the code and customer to the counts", async () => {
     const now = new Date("2026-11-10T12:00:00.000Z");
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce({
-      id: "code-123",
-      code: "LIMIT5",
-      type: "percent",
-      value: "10",
-      currency: "EUR",
-      validFrom: now,
-      validTo: null,
-      maxUses: 5,
-      maxUsesPerCustomer: 2,
-      minOrderTotal: null,
-      active: true,
-      campaignId: null,
-      createdAt: now,
-      updatedAt: now,
-    } as any);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(
+      codeRow({
+        id: "code-123",
+        code: "LIMIT5",
+        type: "percent",
+        value: "10",
+        currency: "EUR",
+        validFrom: now,
+        validTo: null,
+        maxUses: 5,
+        maxUsesPerCustomer: 2,
+        minOrderTotal: null,
+        active: true,
+        campaignId: null,
+      }),
+    );
     vi.mocked(redemptionRepo.countActiveRedemptions).mockResolvedValue(0);
 
     await validateDiscount(
@@ -311,7 +311,7 @@ describe("validateDiscount", () => {
   });
 
   it("does not query counts when code not found", async () => {
-    vi.mocked(db.marketingDiscountCode.findUnique).mockResolvedValueOnce(null);
+    vi.mocked(db.discountCode.findUnique).mockResolvedValueOnce(null);
 
     const request: ValidateRequest = {
       code: "NOTFOUND",
@@ -325,6 +325,6 @@ describe("validateDiscount", () => {
       vi.mocked(redemptionRepo.countActiveRedemptions),
     ).not.toHaveBeenCalled();
     expect(result.valid).toBe(false);
-    expect((result as any).reasonCode).toBe("code_not_found");
+    expect(result).toMatchObject({ reasonCode: "code_not_found" });
   });
 });

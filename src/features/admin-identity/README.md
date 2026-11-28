@@ -6,6 +6,8 @@ Status: Better Auth foundation is wired through src/server/auth.ts, src/server/d
 
 Read ../../../docs/architecture.md and ../../../docs/coding-conventions.md.
 
+See the [shared authentication guide](../../../docs/authentication.md) for the proposed Better Auth setup, permission contract, and migration plan for external Identity consumers.
+
 ## Folder responsibilities
 
 - components: feature UI.

@@ -67,7 +67,7 @@ async function promotionId(context: IdContext) {
 }
 
 const invalidId = () =>
-  fail(400, "invalid_id", "The promotion ID must be a UUID.");
+  fail(400, "invalid_id", "The promotion ID is not valid.");
 
 // POST /promotions
 export function createPromotionHandler(request: Request) {
@@ -149,7 +149,8 @@ export async function receiveEventHandler(request: Request) {
   }
   const event = orderEventSchema.safeParse(body);
   if (!event.success) return invalidInput(event.error);
-  return ok(await receiveOrderEvent(event.data), 202);
+  const { id } = await receiveOrderEvent(event.data);
+  return ok({ id }, 202);
 }
 
 // GET /orders/{orderId}/discounts (Accounting, Marketplace)

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { money } from "../utils/money";
 
-// Mirrors PromotionCreate / PromotionUpdate in contracts/marketing.yaml (MAR-21).
+// Mirrors PromotionCreate / PromotionUpdate in docs/marketing/marketing.yaml (MAR-21).
 
 const moneySchema = z
   .number()
@@ -77,7 +77,8 @@ export const promotionFilterSchema = z
   })
   .strict();
 
-export const promotionIdSchema = z.uuid();
+// Shared-schema ids are cuids; treat them as opaque strings.
+export const promotionIdSchema = z.string().trim().min(1).max(64);
 
 export type CreatePromotionInput = z.output<typeof promotionCreateSchema>;
 export type UpdatePromotionInput = z.output<typeof promotionUpdateSchema>;
