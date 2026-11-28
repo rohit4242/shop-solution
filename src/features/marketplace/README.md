@@ -4,7 +4,7 @@ Scope: seller onboarding, product listings with moderation, seller dashboards, a
 
 Commission: the class ownership table lists "commissions" under Marketplace. Our proposal is that **Accounting calculates and books commission and payouts**, and Marketplace only reports each sale line to Accounting. This needs Accounting's agreement (see [Open decisions](#open-decisions)).
 
-Status: **in progress — PR 3 of 4 (API and OpenAPI).** The sections below describe the finished feature; PRs 1–4 add it in steps: data model, business logic, API and OpenAPI, seller dashboard.
+Status: **implemented.** Data model, services, the `/api/v1/marketplace` routes, the seller dashboard at `/seller`, and the OpenAPI contract. This is the Marketplace API 2.2.0 the team built in sessions 4–7 (FastAPI), moved into this app as contract 3.0.0. Some rules are interim until other teams decide (see [Interim choices](#interim-choices)).
 
 Read ../../../docs/architecture.md and ../../../docs/coding-conventions.md.
 
