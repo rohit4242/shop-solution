@@ -14,12 +14,18 @@ jobs:
       BETTER_AUTH_SECRET: ci-only-placeholder-secret-at-least-32-characters
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Check contributor documentation
+        run: pnpm docs:check
+        env:
+          DOCS_BASE_SHA: ${{ github.event.pull_request.base.sha }}
       - run: pnpm db:generate
       - run: pnpm exec prisma validate
       - run: pnpm lint
