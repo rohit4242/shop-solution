@@ -34,7 +34,7 @@ export function DocsLayout({ children }: { children: React.ReactNode }) {
               v0.4.0 · Promotions
             </span>
             <a
-              href={`${docsBase}/openapi.yaml`}
+              href={`${docsBase}/openapi.json`}
               className="rounded-md px-2 py-1 underline underline-offset-4"
             >
               OpenAPI ↗

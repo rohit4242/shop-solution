@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { DocsContent } from "../components/docs/docs-content";
 import { docPages } from "../docs/navigation";
-import { docsOrigin, openApiYamlResponse } from "../server/docs";
+import {
+  docsOrigin,
+  openApiJsonResponse,
+  openApiYamlResponse,
+} from "../server/docs";
 
 // The /docs/marketing site: every page in the menu has content, and the served contract is the source file.
 
@@ -34,6 +38,13 @@ describe("Marketing docs", () => {
     expect(response.headers.get("content-type")).toContain("application/yaml");
     expect(await response.text()).toBe(
       readFileSync("src/features/marketing/api/openapi.yaml", "utf8"),
+    );
+  });
+
+  it("serves the same contract as JSON", async () => {
+    const response = await openApiJsonResponse();
+    expect(await response.json()).toEqual(
+      parse(readFileSync("src/features/marketing/api/openapi.yaml", "utf8")),
     );
   });
 

@@ -38,7 +38,7 @@ The check runs on the server for every back-office request and for the screen.
 ## Public contract
 
 Developer docs: `/docs/marketing` on the running site (source in `docs/` and `components/docs/`). Contract:
-[api/openapi.yaml](api/openapi.yaml) (0.4.0), also served at `/docs/marketing/openapi.yaml`; changelog:
+[api/openapi.yaml](api/openapi.yaml) (0.4.0), also served at `/docs/marketing/openapi.yaml` and `/docs/marketing/openapi.json`; changelog:
 [api/CHANGELOG.md](api/CHANGELOG.md). Base path
 `/api/v1/marketing`. Success is `{ "data": ... }`, errors are `{ "error": { "code", "message", "fieldErrors"? } }`.
 Money is a decimal with 2 places plus `currency` (`59.90`, `"EUR"`) on the wire.

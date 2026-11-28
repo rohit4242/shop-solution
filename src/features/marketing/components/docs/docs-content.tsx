@@ -737,9 +737,18 @@ const tools = await client.tools();`}
             The OpenAPI 3.1 contract describes every Marketing operation. It is
             the source the handlers and their Zod schemas follow.
           </p>
-          <a className={linkClass} href={`${docsBase}/openapi.yaml`}>
-            Open the OpenAPI YAML
-          </a>
+          <div className="flex flex-wrap gap-6">
+            <a className={linkClass} href={`${docsBase}/openapi.yaml`}>
+              Open the OpenAPI YAML
+            </a>
+            <a
+              className={linkClass}
+              href={`${docsBase}/openapi.json`}
+              download="marketing.openapi.json"
+            >
+              Download OpenAPI JSON
+            </a>
+          </div>
           <p className="text-sm text-muted-foreground">
             Changes are listed in the{" "}
             <a

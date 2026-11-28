@@ -2,6 +2,7 @@ import "server-only";
 
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { parse } from "yaml";
 
 type Env = Record<string, string | undefined>;
 
@@ -13,16 +14,26 @@ export function docsOrigin(env: Env = process.env): string {
   return "http://localhost:3000";
 }
 
+const contractPath = () =>
+  join(process.cwd(), "src/features/marketing/api/openapi.yaml");
+
 /** The machine-readable contract, read from its source file (the route is prerendered at build time). */
 export async function openApiYamlResponse() {
-  const yaml = await readFile(
-    join(process.cwd(), "src/features/marketing/api/openapi.yaml"),
-    "utf8",
-  );
+  const yaml = await readFile(contractPath(), "utf8");
   return new Response(yaml, {
     headers: {
       "Content-Type": "application/yaml; charset=utf-8",
       "Content-Disposition": 'inline; filename="marketing.openapi.yaml"',
+    },
+  });
+}
+
+/** The same contract as JSON, for tools that do not read YAML (like the other teams' openapi.json). */
+export async function openApiJsonResponse() {
+  const document = parse(await readFile(contractPath(), "utf8"));
+  return Response.json(document, {
+    headers: {
+      "Content-Disposition": 'attachment; filename="marketing.openapi.json"',
     },
   });
 }
