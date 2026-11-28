@@ -67,7 +67,7 @@ function expectInvariants(
 describe("reason codes", () => {
   it("match the contract enum", () => {
     const contract = parse(
-      readFileSync("docs/marketing/marketing.yaml", "utf8"),
+      readFileSync("src/features/marketing/api/openapi.yaml", "utf8"),
     );
     const contractCodes: string[] =
       contract.components.schemas.ValidateResult.properties.reasonCode.enum;

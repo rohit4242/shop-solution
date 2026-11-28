@@ -10,7 +10,7 @@ info:
     Storefront. The shared shop database stores integer minor units (5990) and percentages as basis
     points (1000 = 10 %); Marketing converts exactly at this boundary, so the wire format is unchanged.
     Ids (promotionId, campaignId) are opaque strings (cuids in the shared database).
-    Changelog: docs/marketing/CHANGELOG.md.
+    Changelog: CHANGELOG.md, next to this file.
 servers:
   - url: /api/v1/marketing
 

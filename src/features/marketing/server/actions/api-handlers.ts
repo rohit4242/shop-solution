@@ -28,7 +28,7 @@ import {
 import { validateDiscount } from "../services/validate-service";
 
 // Thin HTTP entry points for src/app/api/v1/marketing/**: authenticate, authorize, validate,
-// then call a service. Contract: docs/marketing/marketing.yaml.
+// then call a service. Contract: src/features/marketing/api/openapi.yaml.
 
 type IdContext = { params: Promise<{ id: string }> };
 

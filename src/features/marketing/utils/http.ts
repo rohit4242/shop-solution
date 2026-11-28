@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-// Marketing's response shapes (docs/marketing/marketing.yaml):
+// Marketing's response shapes (src/features/marketing/api/openapi.yaml):
 //   success: { "data": ... }
 //   error:   { "error": { "code": "snake_case", "message": "...", "fieldErrors"?: {...} } }
 

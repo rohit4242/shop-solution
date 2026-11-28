@@ -4,7 +4,7 @@ import { validateDiscount } from "../server/services/validate-service";
 import type { ValidateRequest } from "../schemas/validate.schema";
 import { codeRow, promotionRow } from "./fixtures";
 
-// MAR-21 (AC2, AC3): the four cases of docs/marketing/marketing.yaml /discounts/validate, with promotions,
+// MAR-21 (AC2, AC3): the four cases of src/features/marketing/api/openapi.yaml /discounts/validate, with promotions,
 // on the shared shop tables (promotion, discount_code, order_discount).
 
 vi.mock("@/server/db", () => ({

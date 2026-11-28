@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { money } from "../utils/money";
 
-// Mirrors PromotionCreate / PromotionUpdate in docs/marketing/marketing.yaml (MAR-21).
+// Mirrors PromotionCreate / PromotionUpdate in src/features/marketing/api/openapi.yaml (MAR-21).
 
 // Messages are shown next to the form field (DESIGN.md: plain words that say how to fix it).
 const moneySchema = z

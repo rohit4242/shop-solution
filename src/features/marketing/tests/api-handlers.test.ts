@@ -11,7 +11,7 @@ import {
 import { checkMarketingManager } from "../server/session";
 import { promotionRow } from "./fixtures";
 
-// HTTP behaviour of the operations in docs/marketing/marketing.yaml: auth, validation, errors.
+// HTTP behaviour of the operations in src/features/marketing/api/openapi.yaml: auth, validation, errors.
 
 vi.mock("next/server", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/server")>()),

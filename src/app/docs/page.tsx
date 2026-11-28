@@ -76,16 +76,12 @@ const teams: {
   {
     slug: "marketing",
     name: "Marketing",
-    description: "Workspace, API contract, MCP and exercise docs",
+    description: "Promotions workspace and API contract",
     links: [
       { label: "Marketing workspace", href: "/marketing/promotions" },
       {
         label: "OpenAPI contract",
-        href: `${repo}/blob/main/docs/marketing/marketing.yaml`,
-      },
-      {
-        label: "Exercise and MCP docs",
-        href: `${repo}/tree/main/docs/marketing`,
+        href: `${repo}/blob/main/src/features/marketing/api/openapi.yaml`,
       },
     ],
   },

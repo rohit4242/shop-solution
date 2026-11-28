@@ -33,7 +33,7 @@ export class PromotionNotFoundError extends Error {
 
 type PromotionRecord = PromotionWithScope & Pick<Promotion, "description">;
 
-/** Promotion in docs/marketing/marketing.yaml (public, GET /promotions/active). */
+/** Promotion in src/features/marketing/api/openapi.yaml (public, GET /promotions/active). */
 export function toPublicPromotionDto(record: PromotionRecord) {
   return {
     promotionId: record.id,
