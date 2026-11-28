@@ -1,6 +1,6 @@
 # Shared database rules
 
-Use [the application schema](schema.prisma) and its [migration history](migrations/) as the runtime source of truth. The [canonical shop design](../docs/commerce/README.md) describes the proposed target and its open decisions.
+Use [the application schema](schema.prisma) and its [migration history](migrations/) as the runtime source of truth. The [canonical shop design](../docs/commerce/README.md) explains the models and the remaining feature integration decisions.
 
 - Reuse the shared product, seller offer, customer, and order IDs. Check the existing schema and public contracts before introducing a new model. Add a separate table only when it represents a distinct business record or an agreed derived view.
 - Keep each write behind the responsible feature's documented server interface. Check the actor's permission and validate input with Zod. Coordinate shared entities with affected teams and confirm the writer for an unassigned domain before implementing its contract.

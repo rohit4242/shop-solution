@@ -2,12 +2,12 @@
 
 **Goal** — Adopt a single relational model for the classroom shop so all teams share canonical catalog, customer, order, payment, and fulfillment records.
 
-**Design** — [Canonical database and team map](../../commerce/README.md), [review draft](../../commerce/shop-schema.draft.prisma), and the repo's [architecture](../../architecture.md) and [review policy](../../review-policy.md).
+**Design** — [Canonical database and team map](../../commerce/README.md), [application schema](../../../prisma/schema.prisma), and the repo's [architecture](../../architecture.md) and [review policy](../../review-policy.md).
 
 ## 1. Agree the business entities and prepare contribution checks
 
 - [ ] Confirm `Product → ProductVariant`, `Seller → Offer → OfferItem`, and `OfferItem → InventoryBalance` with Admin & Identity, Marketplace, Storefront, and Search. Use a test with two sellers listing the same product and separate stock and prices.
-- [ ] Name the writers for catalog edits, checkout, orders, stock, and payment confirmation. Record the permissions, stable IDs, formats, and public read APIs before editing the application schema.
+- [ ] Name the writers for catalog edits, checkout, orders, stock, and payment confirmation. Record the permissions, stable IDs, formats, and public read APIs before wiring the feature operations.
 - [ ] Confirm identity authority, discount and tax rounding, and the one-invoice and one-shipment constraints for the initial story. Confirm the Accounting-to-Logistics handoff and Marketing's `order.placed` compatibility contract.
 - [ ] Populate the trusted class roster and resolve authorized fork CI actions. Verify a sample fork PR can satisfy quality checks and two independent-group approvals.
 
@@ -16,7 +16,8 @@
 ## 2. Choose the migration path from actual database state
 
 - [ ] Read PostgreSQL migration history in each authorized shared environment. Compare current `prisma/migrations/` with [Marketing #23](https://github.com/rohit4242/shop-solution/pull/23) and [Marketplace #24](https://github.com/rohit4242/shop-solution/pull/24). Treat draft-only tables as proposals until their migration status is known.
-- [ ] Where only auth is applied, add forward migrations from the existing auth baseline. Revise the draft PRs to consume those canonical models as a dependency, with the author's coordination.
+- [x] Add a forward migration from the existing auth baseline.
+- [ ] Revise the draft PRs to consume those canonical models as a dependency, with the authors' coordination.
 - [ ] Where a draft schema is already applied, keep its SQL history and add forward migrations to create the canonical tables, backfill, and reconcile them. Retire old storage in a separate approved cleanup after consumers have switched and counts and financial totals agree.
 - [ ] Prepare fixtures for auth users, an offer with variants and images, a promotion and code, and a paid order with allocated discount. Rehearse upgrades on disposable databases and keep an explicit mapping for any legacy IDs. Validate using the team PR sources before replacing generated client calls.
 
@@ -24,7 +25,7 @@
 
 ## 3. Land the canonical catalog and switch readers
 
-- [ ] Add reviewed catalog and seller models to `prisma/schema.prisma`, with their migration under `prisma/migrations/`. Map sellers and memberships; normalize categories and product variants. Identify duplicates with the catalog owners before linking offers to existing products. Convert the base price and stock to one default `OfferItem`; map variants to their sellable items.
+- [ ] Connect the catalog and seller features to the canonical models. Map sellers and memberships, and normalize categories and product variants. Identify duplicates with the catalog owners before linking offers to existing products. Convert the base price and stock to one default `OfferItem`; map variants to their sellable items.
 - [ ] Agree image storage. Verify every migrated image remains reachable through the public offer contract. Preserve offer status and apply the existing moderation and visibility rules when switching readers.
 - [ ] Coordinate Marketplace's dependency stack [#24](https://github.com/rohit4242/shop-solution/pull/24) → [#25](https://github.com/rohit4242/shop-solution/pull/25) → [#26](https://github.com/rohit4242/shop-solution/pull/26) → [#27](https://github.com/rohit4242/shop-solution/pull/27). Publish provider contracts through feature server entry points. Switch Storefront and Search to the same reader.
 
@@ -32,7 +33,7 @@
 
 ## 4. Create one canonical checkout and payment path
 
-- [ ] Add customer, cart, order, line, address snapshot, inventory reservation, and payment models in owner-reviewed migrations. Keep order creation and the first outbox write in one transaction. Validate the customer, offer item, and currency on write.
+- [ ] Wire customer, cart, order, line, address snapshot, inventory reservation, and payment operations to the canonical models. Keep order creation and the first outbox write in one transaction. Validate the customer, offer item, and currency on write.
 - [ ] Checkout applies a confirmed promotion and stores `OrderDiscount` and its allocation once with the order. Adapt Marketing #23's Decimal JSON to minor units with exact conversion. In the integration fixture, a 10% discount on EUR 59.90 equals 599 minor units. If Marketing receives the event again, the receipt recognizes the original event ID and the app keeps the same applied discount rows.
 - [ ] Use a transaction for reserving, committing, releasing, and expiring stock. Ensure constraints reject nonpositive quantities and balances with `held > onHand`. Test two checkouts competing for the last unit and the same cart being submitted twice.
 - [ ] Record a sandbox payment using a stable operation key. Preserve immutable order totals and explicit tax and discount allocations. Revalidate older cart items before purchase and reject a reference across products or customers.

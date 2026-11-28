@@ -1,6 +1,6 @@
 # Canonical shared shop database
 
-The shared PostgreSQL database represents the shop as a whole. A product, customer, order, and payment each have one canonical identity. Every feature uses those identities through agreed service interfaces. The class still needs to name who can change each kind of record. See the [Prisma draft](shop-schema.draft.prisma) and the [refactor plan](../superpowers/plans/2026-11-28-shared-shop-integration.md).
+The shared PostgreSQL database represents the shop as a whole. A product, customer, order, and payment each have one canonical identity. Every feature uses those identities through agreed service interfaces. The class still needs to name who can change each kind of record. See the [application schema](../../prisma/schema.prisma) and the [refactor plan](../superpowers/plans/2026-11-28-shared-shop-integration.md).
 
 ## How the records connect
 
@@ -52,7 +52,7 @@ The draft assumes one customer account per user, one offer per seller and produc
 ```text
 shop-solution/
 ├── prisma/
-│   ├── schema.prisma          # canonical application models after adoption
+│   ├── schema.prisma          # canonical application models
 │   └── migrations/            # one PostgreSQL migration history
 ├── src/
 │   ├── app/                   # pages, route handlers, API composition
@@ -85,4 +85,4 @@ Use feature `server/index.ts` exports for cross-feature server calls. Validate w
 | Logistics in-memory store                                                                                                           | Keep OpenAPI 1.3.0 behavior. When adopted, use canonical orders and shipments inside the service or through the agreed shared fulfillment interface.                                                                                                                                                       |
 | Better Auth plus external Identity integration                                                                                      | Preserve the four Better Auth auth tables and the existing auth migration. Agree one permission authority and a subject mapping before application roles are used.                                                                                                                                         |
 
-The models under `docs/` are for review. The runtime schema under `prisma/` still describes the currently applied application baseline. Review deployed migration state before selecting an adoption path.
+The [canonical shop migration](../../prisma/migrations/20261128030000_canonical_shop/migration.sql) adds the new tables and constraints after the existing Better Auth migration. It preserves the four auth tables and their records. Environments with data from the draft Marketing or Marketplace schemas need a separate mapping and backfill before switching their feature code to canonical tables.
