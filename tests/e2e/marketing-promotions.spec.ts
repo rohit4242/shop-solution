@@ -41,8 +41,8 @@ test.describe("marketing promotions screen", () => {
     await page.getByRole("button", { name: "Create promotion" }).click();
     await expect(
       page.getByRole("form", { name: "New promotion" }).getByRole("alert"),
-    ).toHaveText("The request is not valid.");
-    await expect(page.locator("#name-error")).toBeVisible();
+    ).toHaveText("Not saved yet. Fix the marked fields and try again.");
+    await expect(page.locator("#name-error")).toHaveText("Enter a name.");
     await expect(page.getByLabel("Description")).toHaveValue("10 % off M1");
   });
 

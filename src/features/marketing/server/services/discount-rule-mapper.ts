@@ -7,7 +7,7 @@ import { fromBasisPoints, fromMinor } from "../../utils/money";
 import type { RuleCode, RulePromotion } from "./discount-rules";
 
 // The one place where rows of the shared shop schema become rule inputs (MAR-21). Validate and the
-// order-discount read both use it, so the same promotion always gives the same amount. Pure: no
+// promotion screens both use it, so the same promotion always shows and gives the same amount. Pure: no
 // database access here.
 //
 // Shared schema → rules: amounts are minor units (5990) and percentages basis points (1000); the rules

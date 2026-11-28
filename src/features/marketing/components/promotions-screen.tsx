@@ -47,7 +47,7 @@ export async function PromotionsScreen() {
   );
 
   return (
-    <main className="mx-auto grid max-w-5xl gap-6 p-6">
+    <main className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] gap-6 px-5 py-8 sm:px-8 sm:py-12">
       <header className="grid gap-1">
         <h1 className="text-2xl font-semibold">Promotions</h1>
         <p className="text-muted-foreground">
@@ -95,68 +95,76 @@ async function PromotionsContent() {
               No promotions yet. Create one above.
             </p>
           ) : (
-            <table className="w-full text-left text-sm">
-              <thead className="border-b text-muted-foreground">
-                <tr>
-                  <th scope="col" className="py-2 pr-4 font-medium">
-                    Name
-                  </th>
-                  <th scope="col" className="py-2 pr-4 font-medium">
-                    Discount
-                  </th>
-                  <th scope="col" className="py-2 pr-4 font-medium">
-                    Applies to
-                  </th>
-                  <th scope="col" className="py-2 pr-4 font-medium">
-                    Period
-                  </th>
-                  <th scope="col" className="py-2 pr-4 font-medium">
-                    Status
-                  </th>
-                  <th scope="col" className="py-2 font-medium">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {promotions.map((promotion) => (
-                  <tr
-                    key={promotion.promotionId}
-                    className="border-b last:border-0"
-                  >
-                    <td className="py-2 pr-4">
-                      <div className="font-medium">{promotion.name}</div>
-                      <div className="text-muted-foreground">
-                        {promotion.description}
-                      </div>
-                    </td>
-                    <td className="py-2 pr-4">
-                      {promotion.type === "percent"
-                        ? `${promotion.value} %`
-                        : `${promotion.value.toFixed(2)} EUR`}
-                    </td>
-                    <td className="py-2 pr-4">
-                      {scopeText(promotion.productIds, promotion.categoryIds)}
-                    </td>
-                    <td className="py-2 pr-4">
-                      {formatDate(promotion.validFrom)} –{" "}
-                      {formatDate(promotion.validTo)}
-                    </td>
-                    <td className="py-2 pr-4">
-                      {promotion.active ? "Active" : "Inactive"}
-                    </td>
-                    <td className="py-2">
-                      {promotion.active && (
-                        <DeactivatePromotionButton
-                          promotionId={promotion.promotionId}
-                          name={promotion.name}
-                        />
-                      )}
-                    </td>
+            // On small screens the table scrolls inside its own region, never the whole page (DESIGN.md).
+            <div
+              role="region"
+              aria-label="Promotions table"
+              tabIndex={0}
+              className="relative overflow-x-auto rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="border-b text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="py-2 pr-4 font-medium">
+                      Name
+                    </th>
+                    <th scope="col" className="py-2 pr-4 font-medium">
+                      Discount
+                    </th>
+                    <th scope="col" className="py-2 pr-4 font-medium">
+                      Applies to
+                    </th>
+                    <th scope="col" className="py-2 pr-4 font-medium">
+                      Period
+                    </th>
+                    <th scope="col" className="py-2 pr-4 font-medium">
+                      Status
+                    </th>
+                    <th scope="col" className="py-2 font-medium">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {promotions.map((promotion) => (
+                    <tr
+                      key={promotion.promotionId}
+                      className="border-b last:border-0"
+                    >
+                      <td className="py-2 pr-4">
+                        <div className="font-medium">{promotion.name}</div>
+                        <div className="text-muted-foreground">
+                          {promotion.description}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4 tabular-nums">
+                        {promotion.type === "percent"
+                          ? `${promotion.value} %`
+                          : `${promotion.value.toFixed(2)} EUR`}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {scopeText(promotion.productIds, promotion.categoryIds)}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {formatDate(promotion.validFrom)} –{" "}
+                        {formatDate(promotion.validTo)}
+                      </td>
+                      <td className="py-2 pr-4">
+                        {promotion.active ? "Active" : "Inactive"}
+                      </td>
+                      <td className="py-2">
+                        {promotion.active && (
+                          <DeactivatePromotionButton
+                            promotionId={promotion.promotionId}
+                            name={promotion.name}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardContent>
       </Card>

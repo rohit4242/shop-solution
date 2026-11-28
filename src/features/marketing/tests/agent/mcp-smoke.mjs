@@ -41,13 +41,12 @@ try {
   const tools = await client.tools();
   const names = Object.keys(tools).sort();
   check(
-    "seven tools, no reset or delete",
+    "six tools, no reset or delete",
     JSON.stringify(names) ===
       JSON.stringify([
         "check_cart_discount",
         "create_promotion",
         "deactivate_promotion",
-        "get_order_discount",
         "list_active_promotions",
         "list_promotions",
         "update_promotion",

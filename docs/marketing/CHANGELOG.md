@@ -8,6 +8,10 @@ Marketing now uses the canonical shop schema that `main` adopted on 28 Nov (PR #
 `marketing_*` tables. Field names and the decimal money format on the wire are unchanged. Not released
 before: 0.3.0 only existed in the draft PR #23.
 
+Scope agreed with the maintainer: **promotion management and discount validation first.** The order
+operations wait for an agreement with Storefront and Accounting (who sends `order.placed`, how those routes
+are protected, how Accounting reads the saved discount) and come in a follow-up PR.
+
 ### Changed
 
 - Storage: promotions in `promotion`, `promotion_product`, `promotion_category`; codes in `discount_code`;
@@ -18,13 +22,10 @@ before: 0.3.0 only existed in the draft PR #23.
   empty or over-long id.
 - `productIds` / `categoryIds` must be ids from the shared catalog. An unknown id is a 400 with
   `fieldErrors.productIds` (or `categoryIds`) instead of being stored.
-- `GET /orders/{orderId}/discounts` reads what checkout stored with the order (`order_discount`,
-  `order_discount_allocation`). It lists every order line, with `offerId` always set. Reversed discounts
-  are ignored. 404 also when the order does not exist.
-- `POST /events` acknowledges `order.placed` once per event id. It no longer stores a discount or a
-  redemption: checkout records the applied discount with the order, and code use is counted from those rows.
-- `POST /reset` removes promotions, codes and Marketing's event receipts. Rows that an order already uses are
-  deactivated instead of deleted; the response has `deleted` and `deactivated` counts.
+- `POST /reset` is local test setup only: always off in a production build, and in development only with
+  `MARKETING_RESET_ENABLED=true`. It removes promotions and codes; rows that an order already uses are
+  deactivated instead of deleted. The response has `deleted` and `deactivated` counts.
+- Code use (for `maxUses` / `maxUsesPerCustomer`) is counted from applied, non-reversed `order_discount` rows.
 - `PromotionAdmin` no longer has `createdAt` / `updatedAt` (the shared table has no such columns). Lists are
   ordered by `validFrom`, newest first.
 
@@ -33,10 +34,21 @@ before: 0.3.0 only existed in the draft PR #23.
 - `description` column on the shared `promotion` table (nullable, migration
   `20261128180000_promotion_description`), so promotions keep their customer-facing text.
 
+### Removed from this version (follow-up PR)
+
+- `POST /events` (`order.placed`) and `GET /orders/{orderId}/discounts`, both server to server without a login
+  in 0.3.0. They return once Storefront and Accounting agree on the sender, the route protection and how the
+  invoice reads the discount (the shared schema's `order_discount` / `order_discount_allocation`).
+- The MCP tool `get_order_discount` (6 tools remain).
+
 ### Settled
 
 - Money format: integer minor units in the database, decimals on Marketing's API.
-- Who writes the order's discount: checkout, in `order_discount`; Accounting and Marketing read it.
+
+### Open
+
+- The decimal wire format stays until Storefront and Accounting want a change; any change is coordinated
+  with them first.
 
 ## 0.3.0 (27 Nov 2026): first version in shop-solution (draft only)
 

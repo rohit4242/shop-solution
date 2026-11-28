@@ -7,7 +7,6 @@ import {
   promotionUpdateSchema,
 } from "../../schemas/promotion.schema";
 import { validateRequestSchema } from "../../schemas/validate.schema";
-import { getOrderDiscounts } from "../services/order-discount-service";
 import {
   createPromotion,
   deactivatePromotion,
@@ -187,22 +186,6 @@ export const marketingTools = {
       guarded(async () =>
         result(await validateDiscount(validateRequestSchema.parse(input))),
       ),
-  },
-  get_order_discount: {
-    description:
-      "The discount checkout stored with a placed order (what Accounting puts on the invoice), per item. Returns order_discount_not_found when the order does not exist or got no discount. Read-only.",
-    schema: z.strictObject({ orderId: z.string().min(1) }),
-    readOnly: true,
-    run: ({ orderId }: { orderId: string }) =>
-      guarded(async () => {
-        const discounts = await getOrderDiscounts(orderId);
-        return discounts
-          ? result(discounts)
-          : failure(
-              "order_discount_not_found",
-              "No discount was applied to this order.",
-            );
-      }),
   },
 } as const;
 

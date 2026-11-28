@@ -1,4 +1,5 @@
-// Level 2 system test for story steps j, k (and Marketing's part of o), against a running app.
+// Level 2 system test for story steps j (promotion management) and k (discount validation at checkout),
+// against a running app.
 // Checks the real state through the API after every action: "done" is not a test result.
 //
 //   BASE_URL=http://localhost:3000 DATABASE_URL=... MARKETING_RESET_TOKEN=... \
@@ -8,10 +9,9 @@
 // MARKETING_MANAGER_EMAILS containing MANAGER_EMAIL (default manager@shop.test), on the same database
 // as DATABASE_URL (a disposable local one).
 //
-// Stand-ins, because those modules are not in shop-solution yet (see ./fixtures.mjs):
-//   - catalog: products M1 (EUR 59.90) and M2 (EUR 20.00) with one seller offer each;
-//   - checkout: writes the order and the applied discount (shared order_discount tables) exactly as
-//     validate returned it, which is what Storefront's checkout is meant to do.
+// Stand-in, because the catalog is not in shop-solution yet (see ./fixtures.mjs): products M1 (EUR 59.90)
+// and M2 (EUR 20.00) with one seller offer each. Storing the order's discount (k → o) waits for the
+// agreement with Storefront and Accounting and is not part of this test.
 // Exit code 0 = every check passed.
 
 import { createFixtures } from "./fixtures.mjs";
@@ -81,20 +81,11 @@ if (!process.env.DATABASE_URL) {
   console.error("DATABASE_URL is required (the app's disposable database).");
   process.exit(2);
 }
-const fixtures = await createFixtures(process.env.DATABASE_URL, RUN);
+const fixtures = await createFixtures(process.env.DATABASE_URL);
 
 const resetHeaders = process.env.MARKETING_RESET_TOKEN
   ? { authorization: `Bearer ${process.env.MARKETING_RESET_TOKEN}` }
   : {};
-const orderPlaced = (id, orderId, items) => ({
-  specversion: "1.0",
-  type: "order.placed",
-  source: "/storefront",
-  id,
-  time: new Date().toISOString(),
-  data: { orderId, customerId: "c-story", items, total: 0, currency: "EUR" },
-});
-
 // --- Setup: known state -------------------------------------------------------------------------
 const reset = await call("POST", `${API}/reset`, { headers: resetHeaders });
 check("reset: 200", reset.status === 200, reset);
@@ -107,7 +98,7 @@ check(
 
 const manager = await login(MANAGER);
 const customer = await login(CUSTOMER);
-await fixtures.catalog(CUSTOMER);
+await fixtures.catalog();
 check("setup: catalog stand-in has M1 at 59.90 and M2 at 20.00", true);
 
 // --- Step j: create the 10 % promotion for M1 ----------------------------------------------------
@@ -187,52 +178,20 @@ check(
   validate.json,
 );
 
-const orderK = `o-k-${RUN}`;
-const eventK = orderPlaced(`evt-k-${RUN}`, orderK, [
-  { productId: M1, unitPrice: M1_PRICE, quantity: 1 },
-]);
-// Checkout stand-in: the order and the discount validate returned, stored with the order.
-await fixtures.placeOrder(
-  orderK,
-  [{ product: M1, quantity: 1 }],
-  validate.json?.data,
-);
-const placed = await call("POST", `${API}/events`, { body: eventK });
-check("k: order.placed accepted → 202", placed.status === 202, placed);
-const resent = await call("POST", `${API}/events`, { body: eventK });
-check("k: resent event accepted again → 202", resent.status === 202, resent);
-
-const invoiceK = await call("GET", `${API}/orders/${orderK}/discounts`);
-check(
-  `k/o: invoice data for the M1 order shows the promotion discount ${expected.toFixed(2)}`,
-  invoiceK.status === 200 &&
-    invoiceK.json?.data?.appliedBy === "promotion" &&
-    invoiceK.json?.data?.promotionId === promotionId &&
-    invoiceK.json?.data?.discountTotal === expected &&
-    invoiceK.json?.data?.items?.[0]?.productId === M1 &&
-    invoiceK.json?.data?.items?.[0]?.discount === expected,
-  invoiceK.json,
-);
-
-// --- Step o (Marketing's part): the order from step f has no discount ----------------------------
-const orderF = `o-f-${RUN}`;
-const validateF = await call("POST", `${API}/discounts/validate`, {
+const otherProduct = await call("POST", `${API}/discounts/validate`, {
   body: {
     currency: "EUR",
-    items: [{ productId: "M2", unitPrice: 20, quantity: 1 }],
+    items: [
+      { productId: M1, unitPrice: M1_PRICE, quantity: 1 },
+      { productId: "M2", unitPrice: 20, quantity: 1 },
+    ],
   },
 });
-await fixtures.placeOrder(
-  orderF,
-  [{ product: "M2", quantity: 1 }],
-  validateF.json?.data,
-);
-const invoiceF = await call("GET", `${API}/orders/${orderF}/discounts`);
 check(
-  "o: order without M1 has no discount → 404 order_discount_not_found",
-  invoiceF.status === 404 &&
-    invoiceF.json?.error?.code === "order_discount_not_found",
-  invoiceF.json,
+  "k: a cart with M1 and M2 discounts only the M1 line",
+  otherProduct.json?.data?.discountTotal === expected &&
+    otherProduct.json?.data?.items?.[1]?.discount === 0,
+  otherProduct.json,
 );
 
 // --- Promotion ends: no discount any more ---------------------------------------------------------
@@ -256,7 +215,6 @@ check(
   after.json,
 );
 
-await fixtures.removeOrders();
 await fixtures.close();
 const finalReset = await call("POST", `${API}/reset`, {
   headers: resetHeaders,

@@ -51,9 +51,14 @@ export function PromotionForm() {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        setFieldErrors(payload?.error?.fieldErrors ?? {});
+        const errors = payload?.error?.fieldErrors ?? {};
+        setFieldErrors(errors);
         setError(
-          payload?.error?.message ??
+          errors._?.[0] ??
+            (Object.keys(errors).length > 0
+              ? "Not saved yet. Fix the marked fields and try again."
+              : undefined) ??
+            payload?.error?.message ??
             `The promotion was not saved (HTTP ${response.status}). Try again.`,
         );
         return;
@@ -114,7 +119,7 @@ export function PromotionForm() {
           id="type"
           name="type"
           defaultValue="percent"
-          className="h-9 rounded-md border border-input bg-transparent px-3 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring md:text-sm"
         >
           <option value="percent">Percent off</option>
           <option value="fixed">Fixed amount off (EUR)</option>

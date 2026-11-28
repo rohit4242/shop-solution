@@ -2,7 +2,6 @@ import "server-only";
 
 import { connection } from "next/server";
 import { z } from "zod";
-import { orderEventSchema } from "../../schemas/order-event.schema";
 import {
   promotionCreateSchema,
   promotionFilterSchema,
@@ -12,8 +11,6 @@ import {
 import { validateRequestSchema } from "../../schemas/validate.schema";
 import { fail, invalidInput, ok, readJsonBody } from "../../utils/http";
 import { checkMarketingManager } from "../session";
-import { getOrderDiscounts } from "../services/order-discount-service";
-import { receiveOrderEvent } from "../services/order-event-service";
 import {
   createPromotion,
   deactivatePromotion,
@@ -34,7 +31,6 @@ import { validateDiscount } from "../services/validate-service";
 // then call a service. Contract: docs/marketing/marketing.yaml.
 
 type IdContext = { params: Promise<{ id: string }> };
-type OrderContext = { params: Promise<{ orderId: string }> };
 
 const AUTH_ERRORS = {
   401: () => fail(401, "unauthorized", "Login required."),
@@ -136,37 +132,6 @@ export async function validateDiscountHandler(request: Request) {
     if (error instanceof z.ZodError) return invalidInput(error);
     throw error;
   }
-}
-
-// POST /events (Storefront, server to server)
-export async function receiveEventHandler(request: Request) {
-  let body: unknown;
-  try {
-    body = await readJsonBody(request);
-  } catch (error) {
-    if (error instanceof z.ZodError) return invalidInput(error);
-    throw error;
-  }
-  const event = orderEventSchema.safeParse(body);
-  if (!event.success) return invalidInput(event.error);
-  const { id } = await receiveOrderEvent(event.data);
-  return ok({ id }, 202);
-}
-
-// GET /orders/{orderId}/discounts (Accounting, Marketplace)
-export async function orderDiscountsHandler(
-  _request: Request,
-  context: OrderContext,
-) {
-  const { orderId } = await context.params;
-  const discounts = await getOrderDiscounts(orderId);
-  return discounts
-    ? ok(discounts)
-    : fail(
-        404,
-        "order_discount_not_found",
-        "No discount was applied to this order.",
-      );
 }
 
 // POST /reset (tests and the demo; off unless MARKETING_RESET_ENABLED=true)

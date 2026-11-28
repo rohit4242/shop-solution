@@ -21,8 +21,9 @@ paths:
       security: []
       summary: Check a discount code (and automatic promotions) against a cart
       description: |
-        Called by Storefront at checkout. Read-only: checkout stores the applied discount with the order
-        (shared `order_discount`), and a code's use is counted from those rows.
+        Called by Storefront at checkout. Read-only. A code's use is counted from applied, non-reversed
+        rows in the shared `order_discount` table. How checkout stores the applied discount and notifies
+        Marketing (`order.placed`) is to be agreed with Storefront and Accounting (follow-up PR).
 
         Rules run in this order and the first failure sets `reasonCode`: code_not_found, code_inactive,
         code_not_started, code_expired (`validTo` is inclusive), currency_mismatch, min_order_not_reached
@@ -46,8 +47,8 @@ paths:
            with `promotionId`, or `appliedBy: null` with a discount of 0.
         2. Valid code, no promotion gives more: `valid: true`, `appliedBy: code`, `campaignId` as before.
         3. Valid code, a promotion gives more: `valid: true`, `appliedBy: promotion`, `promotionId`,
-           `campaignId: null`, the promotion's discounts. Storefront must NOT send `discountCode` in
-           order.placed, and checkout stores the promotion (not the code) with the order.
+           `campaignId: null`, the promotion's discounts. Checkout should then apply the promotion, not
+           the code.
         4. Invalid code: `valid: false` with the code's `reasonCode`, `discountTotal: 0`, every item
            discount 0, `appliedBy: null`; plus a `promotion` object when a promotion applies, so
            Storefront can show or apply it instead (validate again without the code gives it as case 1).
@@ -280,105 +281,17 @@ paths:
             description: promotion_not_found,
           }
 
-  /orders/{orderId}/discounts:
-    get:
-      operationId: getOrderDiscounts
-      security: []
-      summary: The discount applied to an order, per item (Accounting, Marketplace; story steps k and o)
-      description: |
-        Server to server, no login. Reads what checkout stored with the order in the shared tables
-        `order_discount` / `order_discount_allocation` (minor units), converted to decimals. Lists every
-        order line; a line without an allocation has discount 0. Reversed discounts are ignored.
-        404 when the order does not exist or got no discount (e.g. the step-f order in story step o).
-      parameters:
-        - { name: orderId, in: path, required: true, schema: { type: string } }
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [data]
-                properties:
-                  data: { $ref: "#/components/schemas/OrderDiscounts" }
-              example:
-                data:
-                  orderId: o-1002
-                  currency: EUR
-                  appliedBy: promotion
-                  code: null
-                  promotionId: cmih3x0q50000ab12cd34ef56
-                  discountTotal: 5.99
-                  items:
-                    [
-                      {
-                        productId: M1,
-                        offerId: offer-m1,
-                        discount: 5.99,
-                        fundedBy: platform,
-                      },
-                    ]
-        "404":
-          {
-            $ref: "#/components/responses/Error",
-            description: order_discount_not_found,
-          }
-
-  /events:
-    post:
-      operationId: receiveEvent
-      security: []
-      summary: Receive order events from Storefront (CloudEvents 1.0)
-      description: |
-        Handled type: `order.placed` (source `/storefront`). `order.cancelled` is not handled in
-        shop-solution yet and is rejected with 400.
-        A resent event (same `source` + `id`) is accepted again but recorded only once (shared
-        `event_receipt`, consumer `marketing`). Marketing does not store a discount or a redemption
-        from it: checkout stores the applied discount with the order. The receipt is kept for later
-        campaign attribution. The order is never rejected.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: "#/components/schemas/CloudEvent" }
-            example:
-              specversion: "1.0"
-              type: order.placed
-              source: /storefront
-              id: evt-123
-              time: "2026-11-30T14:30:00Z"
-              data:
-                orderId: o-1002
-                customerId: c-42
-                items: [{ productId: M1, unitPrice: 59.90, quantity: 1 }]
-                total: 53.91
-                currency: EUR
-      responses:
-        "202":
-          description: Accepted
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data:
-                    type: object
-                    properties:
-                      id: { type: string }
-        "400": { $ref: "#/components/responses/Error" }
-
   /reset:
     post:
       operationId: resetMarketing
       summary: Remove Marketing's data (system tests, agent runs, demo)
       description: |
-        Deletes promotions (with their product/category scope), discount codes and Marketing's event
-        receipts. A promotion or code that an order already used is kept, because checkout's
+        Local test setup only. Deletes promotions (with their product/category scope) and discount
+        codes. A promotion or code that an order already used is kept, because checkout's
         `order_discount` rows and invoices point at it, and is deactivated instead. Orders, catalog and
         other modules' data are never touched. Marketing has no seed data.
-        Off (404) unless the server sets MARKETING_RESET_ENABLED=true. When MARKETING_RESET_TOKEN is
-        set, send `Authorization: Bearer <token>`.
+        Always off (404) in a production build; in development off unless the server sets
+        MARKETING_RESET_ENABLED=true. When MARKETING_RESET_TOKEN is set, send `Authorization: Bearer <token>`.
       security: [{}, { ResetToken: [] }]
       responses:
         "200":
@@ -400,8 +313,7 @@ paths:
               example:
                 data:
                   {
-                    deleted:
-                      { promotions: 1, discountCodes: 0, eventReceipts: 1 },
+                    deleted: { promotions: 1, discountCodes: 0 },
                     deactivated: { promotions: 0, discountCodes: 0 },
                   }
         "401": { $ref: "#/components/responses/Error" }
@@ -506,7 +418,7 @@ components:
         appliedBy:
           type: [string, "null"]
           enum: [code, promotion, null]
-          description: "What the discount comes from. Send discountCode in order.placed ONLY when this is code."
+          description: "What the discount comes from: the code, an automatic promotion, or nothing. Checkout applies exactly this one."
         promotionId:
           {
             type: [string, "null"],
@@ -648,16 +560,6 @@ components:
       required: [data]
       properties:
         data: { $ref: "#/components/schemas/PromotionAdmin" }
-    CloudEvent:
-      type: object
-      required: [specversion, type, source, id, data]
-      properties:
-        specversion: { type: string, const: "1.0" }
-        type: { type: string }
-        source: { type: string }
-        id: { type: string }
-        time: { type: string, format: date-time }
-        data: { type: object }
     Error:
       type: object
       properties:
@@ -670,28 +572,3 @@ components:
             fieldErrors:
               type: object
               additionalProperties: { type: array, items: { type: string } }
-    OrderDiscounts:
-      type: object
-      required:
-        [orderId, currency, appliedBy, code, promotionId, discountTotal, items]
-      properties:
-        orderId: { type: string }
-        currency: { type: string, example: EUR }
-        appliedBy: { type: string, enum: [code, promotion] }
-        code:
-          {
-            type: [string, "null"],
-            description: "The code, uppercase, when appliedBy is code",
-          }
-        promotionId: { type: [string, "null"] }
-        discountTotal: { type: number, example: 5.99 }
-        items:
-          type: array
-          description: One entry per order item, in order.
-          items:
-            type: object
-            properties:
-              productId: { type: string }
-              offerId: { type: string }
-              discount: { type: number, example: 5.99 }
-              fundedBy: { type: string, enum: [platform] }

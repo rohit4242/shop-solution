@@ -5,8 +5,6 @@ import {
   deactivatePromotionHandler,
   getPromotionHandler,
   listPromotionsHandler,
-  orderDiscountsHandler,
-  receiveEventHandler,
   resetHandler,
   validateDiscountHandler,
 } from "../server";
@@ -38,8 +36,6 @@ vi.mock("@/server/db", () => ({
       updateMany: vi.fn(),
     },
     orderDiscount: { count: vi.fn() },
-    order: { findUnique: vi.fn() },
-    eventReceipt: { createMany: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -236,57 +232,6 @@ describe("public operations", () => {
     expect(status).toBe(400);
     expect(checkMarketingManager).not.toHaveBeenCalled();
   });
-
-  it("order discounts answers 404 when the order got no discount", async () => {
-    vi.mocked(db.order.findUnique).mockResolvedValue(null);
-    const response = await orderDiscountsHandler(
-      req("GET", "/orders/o-1/discounts"),
-      { params: Promise.resolve({ orderId: "o-1" }) },
-    );
-    expect((await json(response)).body.error.code).toBe(
-      "order_discount_not_found",
-    );
-  });
-
-  it("events accepts order.placed (202) and acknowledges a resend without error", async () => {
-    const event = {
-      specversion: "1.0",
-      type: "order.placed",
-      source: "/storefront",
-      id: "e-1",
-      data: {
-        orderId: "o-1",
-        items: [{ productId: "M1", unitPrice: 59.9, quantity: 1 }],
-        total: 53.91,
-        currency: "EUR",
-      },
-    };
-    vi.mocked(db.eventReceipt.createMany)
-      .mockResolvedValueOnce({ count: 1 })
-      .mockResolvedValueOnce({ count: 0 });
-    for (let delivery = 0; delivery < 2; delivery += 1) {
-      const response = await receiveEventHandler(req("POST", "/events", event));
-      expect(response.status).toBe(202);
-      expect((await response.json()).data).toEqual({ id: "e-1" });
-    }
-    expect(vi.mocked(db.eventReceipt.createMany).mock.calls[0][0]).toEqual({
-      data: [{ consumer: "marketing", source: "/storefront", eventId: "e-1" }],
-      skipDuplicates: true,
-    });
-  });
-
-  it("events rejects order.cancelled (not handled in shop-solution yet) with 400", async () => {
-    const event = {
-      specversion: "1.0",
-      type: "order.cancelled",
-      source: "/storefront",
-      id: "e-1",
-      data: { orderId: "o-1" },
-    };
-    expect(
-      (await receiveEventHandler(req("POST", "/events", event))).status,
-    ).toBe(400);
-  });
 });
 
 describe("POST /reset", () => {
@@ -311,11 +256,18 @@ describe("POST /reset", () => {
     expect(db.$transaction).not.toHaveBeenCalled();
   });
 
+  it("is always 404 in a production build, even when enabled", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("MARKETING_RESET_ENABLED", "true");
+    vi.stubEnv("MARKETING_RESET_TOKEN", "");
+    expect((await resetHandler(req("POST", "/reset"))).status).toBe(404);
+    expect(db.$transaction).not.toHaveBeenCalled();
+  });
+
   it("removes Marketing's data, keeps what orders use (deactivated), and reports the counts", async () => {
     vi.stubEnv("MARKETING_RESET_ENABLED", "true");
     vi.stubEnv("MARKETING_RESET_TOKEN", "secret-token");
     vi.mocked(db.$transaction).mockResolvedValue([
-      { count: 1 },
       { count: 0 },
       { count: 2 },
       { count: 0 },
@@ -330,13 +282,10 @@ describe("POST /reset", () => {
     );
     expect(status).toBe(200);
     expect(res.data).toEqual({
-      deleted: { promotions: 2, discountCodes: 0, eventReceipts: 1 },
+      deleted: { promotions: 2, discountCodes: 0 },
       deactivated: { promotions: 1, discountCodes: 0 },
     });
-    // Only Marketing's own receipts, and only rows no order points at, are deleted.
-    expect(db.eventReceipt.deleteMany).toHaveBeenCalledWith({
-      where: { consumer: "marketing" },
-    });
+    // Only rows no order points at are deleted.
     expect(db.promotion.deleteMany).toHaveBeenCalledWith({
       where: { applications: { none: {} }, codes: { none: {} } },
     });
