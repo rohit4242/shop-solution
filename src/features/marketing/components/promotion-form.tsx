@@ -98,7 +98,7 @@ export function PromotionForm() {
         <Input
           id="name"
           name="name"
-          placeholder="M1 10 %"
+          placeholder="e.g. M1 10 %"
           {...described("name")}
         />
         {fieldError("name")}
@@ -108,7 +108,7 @@ export function PromotionForm() {
         <Input
           id="description"
           name="description"
-          placeholder="10 % off M1 in December"
+          placeholder="e.g. 10 % off M1 in December"
           {...described("description")}
         />
         {fieldError("description")}
@@ -134,7 +134,7 @@ export function PromotionForm() {
           type="number"
           step="0.01"
           min="0"
-          placeholder="10"
+          placeholder="e.g. 10"
           {...described("value")}
         />
         {fieldError("value")}
@@ -144,7 +144,7 @@ export function PromotionForm() {
         <Input
           id="productIds"
           name="productIds"
-          placeholder="M1"
+          placeholder="e.g. M1"
           {...described("productIds")}
         />
         {fieldError("productIds")}
