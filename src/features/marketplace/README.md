@@ -4,7 +4,7 @@ Scope: seller onboarding, product listings with moderation, seller dashboards, a
 
 Commission: the class ownership table lists "commissions" under Marketplace. Our proposal is that **Accounting calculates and books commission and payouts**, and Marketplace only reports each sale line to Accounting. This needs Accounting's agreement (see [Open decisions](#open-decisions)).
 
-Status: **in progress — PR 1 of 4 (data model).** The sections below describe the finished feature; PRs 1–4 add it in steps: data model, business logic, API and OpenAPI, seller dashboard.
+Status: **in progress — PR 2 of 4 (business logic).** The sections below describe the finished feature; PRs 1–4 add it in steps: data model, business logic, API and OpenAPI, seller dashboard.
 
 Read ../../../docs/architecture.md and ../../../docs/coding-conventions.md.
 
