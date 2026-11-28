@@ -591,6 +591,8 @@ model Promotion {
   campaignId         String?
   campaign           Campaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   name               String
+  // Shown to customers with the promotion (Marketing's public promotions list).
+  description        String?
   type               DiscountType
   // A percent uses basis points. A fixed discount uses minor currency units.
   percentBasisPoints Int?

@@ -73,7 +73,20 @@ const teams: {
       },
     ],
   },
-  { slug: "marketing", name: "Marketing" },
+  {
+    slug: "marketing",
+    name: "Marketing",
+    description: "Live docs",
+    links: [
+      { label: "API docs", href: "/docs/marketing" },
+      {
+        label: "Use with your AI agent (MCP)",
+        href: "/docs/marketing/use-with-ai",
+      },
+      { label: "OpenAPI contract", href: "/docs/marketing/openapi.yaml" },
+      { label: "Marketing workspace", href: "/marketing/promotions" },
+    ],
+  },
   { slug: "marketplace", name: "Marketplace" },
   { slug: "reviews-ratings", name: "Reviews & Ratings" },
   { slug: "storefront", name: "Storefront" },

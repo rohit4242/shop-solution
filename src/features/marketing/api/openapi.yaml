@@ -1,0 +1,574 @@
+openapi: 3.1.0
+info:
+  title: Marketing module API (shop-solution)
+  version: 0.4.0
+  description: |
+    What Marketing provides to other modules in shop-solution. Source of truth: change this file
+    first, then the Zod schemas in src/features/marketing/schemas and the handlers.
+    Responses wrap the payload in `data`; errors use `{ error: { code, message, fieldErrors? } }`.
+    Money is a decimal with 2 places plus a currency (e.g. 59.90 EUR), agreed with CRM and used by
+    Storefront. The shared shop database stores integer minor units (5990) and percentages as basis
+    points (1000 = 10 %); Marketing converts exactly at this boundary, so the wire format is unchanged.
+    Ids (promotionId, campaignId) are opaque strings (cuids in the shared database).
+    Changelog: CHANGELOG.md, next to this file.
+servers:
+  - url: /api/v1/marketing
+
+paths:
+  /discounts/validate:
+    post:
+      operationId: validateDiscount
+      security: []
+      summary: Check a discount code (and automatic promotions) against a cart
+      description: |
+        Called by Storefront at checkout. Read-only. A code's use is counted from applied, non-reversed
+        rows in the shared `order_discount` table. How checkout stores the applied discount and notifies
+        Marketing (`order.placed`) is to be agreed with Storefront and Accounting (follow-up PR).
+
+        Rules run in this order and the first failure sets `reasonCode`: code_not_found, code_inactive,
+        code_not_started, code_expired (`validTo` is inclusive), currency_mismatch, min_order_not_reached
+        (a subtotal equal to `minOrderTotal` passes), usage_limit_reached (`maxUses` set and orders
+        that applied the code >= `maxUses`), customer_limit_reached (`maxUsesPerCustomer` set, `customerId`
+        sent, and that customer's orders that applied the code >= `maxUsesPerCustomer`).
+        Only applied, non-reversed order discounts count; a reversed one frees the use.
+        Guests (no `customerId`) skip the per-customer limit; the total limit still applies to them.
+
+        After min_order_not_reached comes no_eligible_items (MAR-21): the code is scoped and no cart line
+        matches its productIds or categoryIds. minOrderTotal is always checked against the FULL cart subtotal.
+
+        Scope (codes and promotions): both lists empty = whole cart; otherwise a line is eligible when its
+        `productId` is in `productIds` OR its `categoryId` is in `categoryIds`. Only eligible lines get a
+        discount; a fixed amount is capped at the eligible subtotal and split over the eligible lines.
+
+        One discount per cart, the biggest wins, never stacked. On a tie the code beats a promotion;
+        between promotions the earlier `validFrom`, then the lower id wins. A discount of 0 never wins.
+        Promotions apply in any currency when percent; a fixed promotion (EUR) only to EUR carts.
+        1. No code (absent or blank): the best promotion or nothing. `valid: true`, `appliedBy: promotion`
+           with `promotionId`, or `appliedBy: null` with a discount of 0.
+        2. Valid code, no promotion gives more: `valid: true`, `appliedBy: code`, `campaignId` as before.
+        3. Valid code, a promotion gives more: `valid: true`, `appliedBy: promotion`, `promotionId`,
+           `campaignId: null`, the promotion's discounts. Checkout should then apply the promotion, not
+           the code.
+        4. Invalid code: `valid: false` with the code's `reasonCode`, `discountTotal: 0`, every item
+           discount 0, `appliedBy: null`; plus a `promotion` object when a promotion applies, so
+           Storefront can show or apply it instead (validate again without the code gives it as case 1).
+
+        `items` has one entry per request item, in the same order, also when a `productId` repeats.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ValidateRequest" }
+            example:
+              code: WELCOME10
+              customerId: c-42
+              currency: EUR
+              items:
+                - { productId: p-1, unitPrice: 29.95, quantity: 2 }
+      responses:
+        "200":
+          description: "Result. An invalid code is still a 200 with `valid: false` and a `reasonCode`."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: "#/components/schemas/ValidateResult" }
+              examples:
+                noCode:
+                  summary: "Case 1: no code, a promotion applies"
+                  value:
+                    data:
+                      valid: true
+                      discountTotal: 5.99
+                      currency: EUR
+                      campaignId: null
+                      appliedBy: promotion
+                      promotionId: 7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10
+                      items: [{ productId: p-1, discount: 5.99 }]
+                valid:
+                  summary: "Case 2: the code applies and wins"
+                  value:
+                    data:
+                      valid: true
+                      discountTotal: 5.99
+                      currency: EUR
+                      campaignId: null
+                      appliedBy: code
+                      promotionId: null
+                      items: [{ productId: p-1, discount: 5.99 }]
+                promotionBeatsCode:
+                  summary: "Case 3: valid 5 % code, a 10 % promotion gives more"
+                  value:
+                    data:
+                      valid: true
+                      discountTotal: 5.99
+                      currency: EUR
+                      campaignId: null
+                      appliedBy: promotion
+                      promotionId: 7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10
+                      items: [{ productId: p-1, discount: 5.99 }]
+                invalid:
+                  summary: "Case 4: the code does not apply, a promotion would"
+                  value:
+                    data:
+                      valid: false
+                      reasonCode: code_expired
+                      discountTotal: 0
+                      currency: EUR
+                      campaignId: null
+                      appliedBy: null
+                      promotionId: null
+                      items: [{ productId: p-1, discount: 0 }]
+                      promotion:
+                        promotionId: 7d7f5a3e-1c1b-4c55-9a51-2f4f6f0d9a10
+                        name: Autumn 10 %
+                        discountTotal: 5.99
+                        items: [{ productId: p-1, discount: 5.99 }]
+        "400": { $ref: "#/components/responses/Error" }
+
+  /promotions/active:
+    get:
+      operationId: listActivePromotions
+      security: []
+      summary: Promotions Storefront can show right now (public)
+      description: |
+        No login. Only promotions that are active and inside their window now (`validTo` inclusive),
+        newest `validFrom` first. Sent with `Cache-Control: no-store`.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Promotion" }
+
+  /promotions:
+    post:
+      operationId: createPromotion
+      summary: Create an automatic promotion (back office)
+      security: [{ IdentitySession: [] }, { LocalSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PromotionCreate" }
+            example:
+              {
+                name: Autumn 10 %,
+                description: 10 % off everything,
+                type: percent,
+                value: 10,
+              }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PromotionAdminResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+    get:
+      operationId: listPromotions
+      summary: List promotions, newest first (back office)
+      security: [{ IdentitySession: [] }, { LocalSession: [] }]
+      parameters:
+        - {
+            name: active,
+            in: query,
+            schema: { type: string, enum: ["true", "false"] },
+          }
+      responses:
+        "200":
+          description: Automatic promotions, latest start (validFrom) first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/PromotionAdmin" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+
+  /promotions/{id}:
+    parameters:
+      - {
+          name: id,
+          in: path,
+          required: true,
+          schema: { type: string, minLength: 1, maxLength: 64 },
+        }
+    get:
+      operationId: getPromotion
+      summary: Get a promotion (back office)
+      security: [{ IdentitySession: [] }, { LocalSession: [] }]
+      responses:
+        "200":
+          description: Promotion
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PromotionAdminResponse" }
+        "400":
+          {
+            $ref: "#/components/responses/Error",
+            description: "invalid_id: empty or longer than 64 characters",
+          }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404":
+          {
+            $ref: "#/components/responses/Error",
+            description: promotion_not_found,
+          }
+    patch:
+      operationId: updatePromotion
+      summary: Update a promotion (back office)
+      security: [{ IdentitySession: [] }, { LocalSession: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PromotionUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PromotionAdminResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404":
+          {
+            $ref: "#/components/responses/Error",
+            description: promotion_not_found,
+          }
+
+  /promotions/{id}/deactivate:
+    parameters:
+      - {
+          name: id,
+          in: path,
+          required: true,
+          schema: { type: string, minLength: 1, maxLength: 64 },
+        }
+    post:
+      operationId: deactivatePromotion
+      summary: Deactivate a promotion (idempotent; promotions are never deleted)
+      security: [{ IdentitySession: [] }, { LocalSession: [] }]
+      responses:
+        "200":
+          description: Promotion with active false, including repeated calls
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PromotionAdminResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404":
+          {
+            $ref: "#/components/responses/Error",
+            description: promotion_not_found,
+          }
+
+  /reset:
+    post:
+      operationId: resetMarketing
+      summary: Remove Marketing's data (system tests, agent runs, demo)
+      description: |
+        Local test setup only. Deletes promotions (with their product/category scope) and discount
+        codes. A promotion or code that an order already used is kept, because checkout's
+        `order_discount` rows and invoices point at it, and is deactivated instead. Orders, catalog and
+        other modules' data are never touched. Marketing has no seed data.
+        Always off (404) in a production build; in development off unless the server sets
+        MARKETING_RESET_ENABLED=true. When MARKETING_RESET_TOKEN is set, send `Authorization: Bearer <token>`.
+      security: [{}, { ResetToken: [] }]
+      responses:
+        "200":
+          description: Reset done, with the number of deleted and deactivated rows
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      deleted:
+                        type: object
+                        additionalProperties: { type: integer }
+                      deactivated:
+                        type: object
+                        additionalProperties: { type: integer }
+              example:
+                data:
+                  {
+                    deleted: { promotions: 1, discountCodes: 0 },
+                    deactivated: { promotions: 0, discountCodes: 0 },
+                  }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+
+components:
+  securitySchemes:
+    IdentitySession:
+      type: apiKey
+      in: cookie
+      name: erp_access_token
+      description: |
+        Default (MARKETING_AUTH_MODE=identity). The shared Admin & Identity login; Marketing asks
+        Identity whether the user has the `marketing_manager` permission.
+    LocalSession:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: |
+        MARKETING_AUTH_MODE=local, for local runs and tests. A Better Auth session whose email is in
+        MARKETING_MANAGER_EMAILS.
+    ResetToken:
+      type: http
+      scheme: bearer
+  responses:
+    Error:
+      description: "Error. 401 unauthorized, 403 forbidden, 503 identity_unavailable for back-office calls."
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    CartItem:
+      type: object
+      required: [productId, unitPrice, quantity]
+      properties:
+        productId: { type: string }
+        offerId:
+          {
+            type: string,
+            description: "Marketplace offer, if the item is sold by a seller",
+          }
+        sellerId: { type: string }
+        categoryId:
+          type: string
+          minLength: 1
+          example: cat-kitchen
+          description: "MAR-21: Storefront's category of the product. Needed for category-scoped codes and promotions; a line without it never matches a category. Also accepted in order.placed items."
+        unitPrice: { type: number, example: 29.95 }
+        quantity: { type: integer, minimum: 1 }
+    ValidateRequest:
+      type: object
+      required: [items, currency]
+      properties:
+        code: { type: string }
+        customerId: { type: string }
+        attributionToken: { type: string }
+        currency: { type: string, example: EUR }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: "#/components/schemas/CartItem" }
+    ValidateResult:
+      type: object
+      description: One discount per cart, never stacked (MAR-21). See /discounts/validate for the four cases.
+      required:
+        [
+          valid,
+          discountTotal,
+          currency,
+          campaignId,
+          appliedBy,
+          promotionId,
+          items,
+        ]
+      properties:
+        valid:
+          {
+            type: boolean,
+            description: "Whether the entered code is usable. true when no code was sent.",
+          }
+        reasonCode:
+          type: string
+          enum:
+            [
+              code_not_found,
+              code_inactive,
+              code_expired,
+              code_not_started,
+              min_order_not_reached,
+              no_eligible_items,
+              usage_limit_reached,
+              customer_limit_reached,
+              currency_mismatch,
+            ]
+        discountTotal: { type: number }
+        currency: { type: string }
+        campaignId:
+          {
+            type: [string, "null"],
+            description: "Only when appliedBy is code and the code belongs to a campaign",
+          }
+        appliedBy:
+          type: [string, "null"]
+          enum: [code, promotion, null]
+          description: "What the discount comes from: the code, an automatic promotion, or nothing. Checkout applies exactly this one."
+        promotionId:
+          {
+            type: [string, "null"],
+            description: "Set when appliedBy is promotion",
+          }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string }
+              discount: { type: number }
+        promotion:
+          $ref: "#/components/schemas/AppliedPromotion"
+          description: "Only when valid is false (the entered code fails) and an automatic promotion applies to the cart."
+    AppliedPromotion:
+      type: object
+      required: [promotionId, name, discountTotal, items]
+      properties:
+        promotionId: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string }
+        discountTotal: { type: number }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId: { type: string }
+              discount: { type: number }
+    Promotion:
+      type: object
+      description: An automatic promotion as Storefront sees it (GET /promotions/active). Applies without a code.
+      required:
+        [
+          promotionId,
+          name,
+          description,
+          type,
+          value,
+          productIds,
+          categoryIds,
+          validFrom,
+          validTo,
+        ]
+      properties:
+        promotionId: { type: string, minLength: 1, maxLength: 64 }
+        name: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [percent, fixed] }
+        value:
+          {
+            type: number,
+            multipleOf: 0.01,
+            example: 10,
+            description: "Percent (10 = 10 %) or a fixed EUR amount",
+          }
+        productIds: { type: array, items: { type: string } }
+        categoryIds:
+          {
+            type: array,
+            items: { type: string },
+            description: "Both empty = whole cart",
+          }
+        validFrom: { type: string, format: date-time }
+        validTo: { type: [string, "null"], format: date-time }
+    PromotionCreate:
+      type: object
+      additionalProperties: false
+      required: [name, description, type, value]
+      description: |
+        percent: 0 < value <= 100; fixed: value > 0 (EUR; a fixed promotion applies only to EUR carts).
+        free_shipping is not supported yet (400, MAR-25). validTo must be after validFrom.
+      properties:
+        name:
+          { type: string, minLength: 1, maxLength: 100, description: Trimmed }
+        description:
+          { type: string, minLength: 1, maxLength: 500, description: Trimmed }
+        type: { type: string, enum: [percent, fixed] }
+        value:
+          {
+            type: number,
+            exclusiveMinimum: 0,
+            maximum: 99999999.99,
+            multipleOf: 0.01,
+          }
+        validFrom:
+          {
+            type: string,
+            format: date-time,
+            description: Defaults to current UTC time,
+          }
+        validTo: { type: string, format: date-time }
+        productIds:
+          {
+            type: array,
+            maxItems: 100,
+            items: { type: string, minLength: 1 },
+            description: "Catalog Product ids (shared product table), trimmed and de-duplicated. An unknown id is a 400 with fieldErrors.productIds",
+          }
+        categoryIds:
+          {
+            type: array,
+            maxItems: 100,
+            items: { type: string, minLength: 1 },
+            description: "Catalog Category ids, trimmed and de-duplicated. An unknown id is a 400 with fieldErrors.categoryIds",
+          }
+    PromotionUpdate:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: Same constraints as create, no defaults; cross-field rules are checked on the merged record. active is not editable; use deactivate.
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        description: { type: string, minLength: 1, maxLength: 500 }
+        type: { type: string, enum: [percent, fixed] }
+        value:
+          {
+            type: number,
+            exclusiveMinimum: 0,
+            maximum: 99999999.99,
+            multipleOf: 0.01,
+          }
+        validFrom: { type: string, format: date-time }
+        validTo: { type: string, format: date-time }
+        productIds:
+          { type: array, maxItems: 100, items: { type: string, minLength: 1 } }
+        categoryIds:
+          { type: array, maxItems: 100, items: { type: string, minLength: 1 } }
+    PromotionAdmin:
+      description: A promotion in the back office.
+      allOf:
+        - { $ref: "#/components/schemas/Promotion" }
+        - type: object
+          required: [active]
+          properties:
+            active: { type: boolean }
+    PromotionAdminResponse:
+      type: object
+      required: [data]
+      properties:
+        data: { $ref: "#/components/schemas/PromotionAdmin" }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: invalid_input }
+            message: { type: string }
+            fieldErrors:
+              type: object
+              additionalProperties: { type: array, items: { type: string } }

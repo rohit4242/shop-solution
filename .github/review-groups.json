@@ -6,12 +6,8 @@
     "analytics-reporting": [],
     "crm": [],
     "logistics": [],
-    "marketing": [
-      "Rhythm02-byte"
-    ],
-    "marketplace": [
-      "Rayyanmaq1"
-    ],
+    "marketing": ["Rhythm02-byte"],
+    "marketplace": ["Rayyanmaq1"],
     "reviews-ratings": [],
     "search-recommendations": [],
     "storefront": []
