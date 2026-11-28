@@ -1,0 +1,783 @@
+// Canonical target for the shared PostgreSQL database. Review draft.
+// Runtime schema and migration history are under prisma/.
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String         @id
+  name              String
+  email             String         @unique
+  emailVerified     Boolean        @default(false)
+  image             String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  customer          Customer?
+  sellerMemberships SellerMember[]
+  roleAssignments   UserRole[]
+  sessions          Session[]
+  accounts          Account[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum SellerStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum OfferStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  REJECTED
+  BLOCKED
+  REMOVED
+}
+
+enum OrderStatus {
+  PLACED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  HELD
+  COMMITTED
+  RELEASED
+  EXPIRED
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+  FREE_SHIPPING
+}
+
+enum ShipmentStatus {
+  CREATED
+  LABEL_CREATED
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_FAILED
+  RETURNED
+  CANCELLED
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  REJECTED
+  HIDDEN
+}
+
+model Role {
+  id          String           @id
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("role")
+}
+
+model Permission {
+  id    String           @id
+  roles RolePermission[]
+
+  @@map("permission")
+}
+
+model UserRole {
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_role")
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}
+
+model Customer {
+  id          String                  @id @default(cuid())
+  userId      String                  @unique
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  displayName String?
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  addresses   CustomerAddress[]
+  contacts    CustomerContact[]
+  segments    CustomerSegmentMember[]
+  consents    MarketingConsent[]
+  carts       Cart[]
+  orders      Order[]
+
+  @@map("customer")
+}
+
+model CustomerAddress {
+  id            String   @id @default(cuid())
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label         String?
+  recipientName String
+  street        String
+  postalCode    String
+  city          String
+  country       String   @db.Char(2)
+
+  @@index([customerId])
+  @@map("customer_address")
+}
+
+model CustomerContact {
+  id          String   @id @default(cuid())
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel     String
+  outcomeCode String
+  occurredAt  DateTime
+
+  @@index([customerId, occurredAt])
+  @@map("customer_contact")
+}
+
+model CustomerSegment {
+  id      String                  @id @default(cuid())
+  name    String                  @unique
+  members CustomerSegmentMember[]
+
+  @@map("customer_segment")
+}
+
+model CustomerSegmentMember {
+  customerId String
+  customer   Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  segmentId  String
+  segment    CustomerSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  addedAt    DateTime        @default(now())
+
+  @@id([customerId, segmentId])
+  @@index([segmentId])
+  @@map("customer_segment_member")
+}
+
+model Category {
+  id              String              @id @default(cuid())
+  slug            String              @unique
+  name            String
+  parentId        String?
+  parent          Category?           @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children        Category[]          @relation("CategoryTree")
+  products        Product[]
+  promotionScopes PromotionCategory[]
+
+  @@index([parentId])
+  @@map("category")
+}
+
+model Product {
+  id              String             @id @default(cuid())
+  categoryId      String
+  category        Category           @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  name            String
+  description     String
+  attributes      Json               @default("{}")
+  status          ProductStatus      @default(DRAFT)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  variants        ProductVariant[]
+  offers          Offer[]
+  promotionScopes PromotionProduct[]
+
+  @@index([categoryId, status])
+  @@map("product")
+}
+
+model ProductVariant {
+  id          String      @id @default(cuid())
+  productId   String
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  // The base product also has a variant, using an explicit default code.
+  code        String
+  label       String
+  attributes  Json        @default("{}")
+  lengthCm    Float?
+  widthCm     Float?
+  heightCm    Float?
+  weightGrams Float?
+  offerItems  OfferItem[]
+
+  @@unique([productId, code])
+  @@unique([id, productId])
+  @@map("product_variant")
+}
+
+model Seller {
+  id           String         @id @default(cuid())
+  displayName  String
+  legalName    String
+  contactEmail String
+  street       String
+  postalCode   String
+  city         String
+  country      String         @db.Char(2)
+  status       SellerStatus   @default(PENDING)
+  statusReason String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  members      SellerMember[]
+  offers       Offer[]
+
+  @@index([status])
+  @@map("seller")
+}
+
+model SellerMember {
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  role     String
+
+  @@id([sellerId, userId])
+  @@index([userId])
+  @@map("seller_member")
+}
+
+model Offer {
+  id           String       @id @default(cuid())
+  productId    String
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Restrict)
+  sellerId     String
+  seller       Seller       @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  status       OfferStatus  @default(PENDING)
+  statusReason String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  items        OfferItem[]
+  images       OfferImage[]
+
+  @@unique([sellerId, productId])
+  @@unique([id, productId])
+  @@index([status, updatedAt, id])
+  @@map("offer")
+}
+
+model OfferItem {
+  id               String            @id @default(cuid())
+  offerId          String
+  productId        String
+  offer            Offer             @relation(fields: [offerId, productId], references: [id, productId], onDelete: Restrict)
+  productVariantId String
+  productVariant   ProductVariant    @relation(fields: [productVariantId, productId], references: [id, productId], onDelete: Restrict)
+  priceMinor       Int
+  currency         String            @db.Char(3)
+  active           Boolean           @default(true)
+  inventory        InventoryBalance?
+  images           OfferImage[]
+  cartItems        CartItem[]
+  orderLines       OrderLine[]
+
+  @@unique([offerId, productVariantId])
+  @@unique([id, offerId])
+  @@map("offer_item")
+}
+
+model OfferImage {
+  id          String     @id @default(cuid())
+  offerId     String
+  offer       Offer      @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  offerItemId String?
+  offerItem   OfferItem? @relation(fields: [offerItemId, offerId], references: [id, offerId], onDelete: Restrict)
+  storageKey  String     @unique
+  mediaType   String
+  byteSize    Int
+  position    Int
+  altText     String?
+
+  @@index([offerId, offerItemId, position])
+  @@map("offer_image")
+}
+
+model InventoryBalance {
+  offerItemId  String                 @id
+  offerItem    OfferItem              @relation(fields: [offerItemId], references: [id], onDelete: Restrict)
+  onHand       Int                    @default(0)
+  held         Int                    @default(0)
+  updatedAt    DateTime               @updatedAt
+  reservations InventoryReservation[]
+
+  @@map("inventory_balance")
+}
+
+model InventoryReservation {
+  orderLineId String            @id
+  orderLine   OrderLine         @relation(fields: [orderLineId, offerItemId], references: [id, offerItemId], onDelete: Restrict)
+  offerItemId String
+  balance     InventoryBalance  @relation(fields: [offerItemId], references: [offerItemId], onDelete: Restrict)
+  quantity    Int
+  status      ReservationStatus @default(HELD)
+  expiresAt   DateTime
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([orderLineId, offerItemId])
+  @@index([status, expiresAt])
+  @@map("inventory_reservation")
+}
+
+model Cart {
+  id         String     @id @default(cuid())
+  customerId String
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  currency   String     @db.Char(3)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  items      CartItem[]
+  order      Order?
+
+  @@unique([id, customerId])
+  @@index([customerId, updatedAt])
+  @@map("cart")
+}
+
+model CartItem {
+  cartId      String
+  cart        Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  offerItemId String
+  offerItem   OfferItem @relation(fields: [offerItemId], references: [id], onDelete: Restrict)
+  quantity    Int
+
+  @@id([cartId, offerItemId])
+  @@index([offerItemId])
+  @@map("cart_item")
+}
+
+model Order {
+  id                 String          @id
+  cartId             String          @unique
+  cart               Cart            @relation(fields: [cartId, customerId], references: [id, customerId], onDelete: Restrict)
+  customerId         String
+  customer           Customer        @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  status             OrderStatus     @default(PLACED)
+  currency           String          @db.Char(3)
+  itemsSubtotalMinor Int
+  shippingMinor      Int
+  discountTotalMinor Int
+  taxTotalMinor      Int
+  grandTotalMinor    Int
+  shippingMethodId   String
+  shippingMethod     ShippingMethod  @relation(fields: [shippingMethodId], references: [id], onDelete: Restrict)
+  placedAt           DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  deliveryAddress    OrderAddress?
+  lines              OrderLine[]
+  discounts          OrderDiscount[]
+  payments           Payment[]
+  invoice            Invoice?
+  shipment           Shipment?
+  events             OrderEvent[]
+
+  @@unique([cartId, customerId])
+  @@unique([id, shippingMethodId])
+  @@index([customerId, placedAt])
+  @@map("shop_order")
+}
+
+model OrderAddress {
+  orderId       String @id
+  order         Order  @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  recipientName String
+  street        String
+  postalCode    String
+  city          String
+  country       String @db.Char(2)
+
+  @@map("order_address")
+}
+
+model OrderLine {
+  id                 String                    @id @default(cuid())
+  orderId            String
+  order              Order                     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  offerItemId        String
+  offerItem          OfferItem                 @relation(fields: [offerItemId], references: [id], onDelete: Restrict)
+  productName        String
+  variantLabel       String
+  categorySlug       String
+  sellerDisplayName  String
+  quantity           Int
+  unitPriceMinor     Int
+  taxRateBasisPoints Int
+  taxMinor           Int
+  totalMinor         Int
+  reservation        InventoryReservation?
+  discounts          OrderDiscountAllocation[]
+  invoiceLines       InvoiceLine[]
+  review             Review?
+
+  @@unique([id, offerItemId])
+  @@unique([id, orderId])
+  @@index([orderId])
+  @@index([offerItemId])
+  @@map("order_line")
+}
+
+model Payment {
+  id                String        @id @default(cuid())
+  orderId           String
+  order             Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  operationKey      String        @unique
+  provider          String
+  providerReference String?
+  status            PaymentStatus @default(PENDING)
+  amountMinor       Int
+  confirmedAt       DateTime?
+  createdAt         DateTime      @default(now())
+  refunds           Refund[]
+
+  @@unique([provider, providerReference])
+  @@index([orderId, status])
+  @@map("payment")
+}
+
+model Refund {
+  id                String   @id @default(cuid())
+  paymentId         String
+  payment           Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+  operationKey      String   @unique
+  providerReference String?
+  amountMinor       Int
+  reason            String?
+  recordedAt        DateTime @default(now())
+
+  @@unique([paymentId, providerReference])
+  @@map("refund")
+}
+
+model Invoice {
+  id         String        @id @default(cuid())
+  orderId    String        @unique
+  order      Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  number     String        @unique
+  currency   String        @db.Char(3)
+  netMinor   Int
+  taxMinor   Int
+  grossMinor Int
+  issuedAt   DateTime      @default(now())
+  lines      InvoiceLine[]
+
+  @@unique([id, orderId])
+  @@map("invoice")
+}
+
+model InvoiceLine {
+  invoiceId          String
+  orderId            String
+  invoice            Invoice    @relation(fields: [invoiceId, orderId], references: [id, orderId], onDelete: Restrict)
+  lineNumber         Int
+  orderLineId        String?
+  orderLine          OrderLine? @relation(fields: [orderLineId, orderId], references: [id, orderId], onDelete: Restrict)
+  description        String
+  quantity           Int
+  taxRateBasisPoints Int
+  netMinor           Int
+  taxMinor           Int
+  grossMinor         Int
+
+  @@id([invoiceId, lineNumber])
+  @@map("invoice_line")
+}
+
+model Campaign {
+  id         String      @id @default(cuid())
+  name       String
+  startsAt   DateTime
+  endsAt     DateTime?
+  promotions Promotion[]
+
+  @@map("campaign")
+}
+
+model MarketingConsent {
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  channel    String
+  granted    Boolean
+  decidedAt  DateTime
+  source     String
+
+  @@id([customerId, channel])
+  @@map("marketing_consent")
+}
+
+model Promotion {
+  id                 String              @id @default(cuid())
+  campaignId         String?
+  campaign           Campaign?           @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  name               String
+  type               DiscountType
+  // A percent uses basis points. A fixed discount uses minor currency units.
+  percentBasisPoints Int?
+  fixedMinor         Int?
+  currency           String?             @db.Char(3)
+  automatic          Boolean
+  active             Boolean             @default(true)
+  startsAt           DateTime
+  endsAt             DateTime?
+  codes              DiscountCode[]
+  products           PromotionProduct[]
+  categories         PromotionCategory[]
+  applications       OrderDiscount[]
+
+  @@index([active, startsAt])
+  @@map("promotion")
+}
+
+model PromotionProduct {
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@id([promotionId, productId])
+  @@map("promotion_product")
+}
+
+model PromotionCategory {
+  promotionId String
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@id([promotionId, categoryId])
+  @@map("promotion_category")
+}
+
+model DiscountCode {
+  id                 String          @id @default(cuid())
+  promotionId        String
+  promotion          Promotion       @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  code               String          @unique
+  maxUses            Int?
+  maxUsesPerCustomer Int?
+  minOrderTotalMinor Int?
+  active             Boolean         @default(true)
+  applications       OrderDiscount[]
+
+  @@unique([id, promotionId])
+  @@map("discount_code")
+}
+
+model OrderDiscount {
+  id            String                    @id @default(cuid())
+  orderId       String
+  order         Order                     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  promotionId   String
+  promotion     Promotion                 @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  codeId        String?
+  code          DiscountCode?             @relation(fields: [codeId, promotionId], references: [id, promotionId], onDelete: Restrict)
+  label         String
+  appliedMinor  Int
+  shippingMinor Int                       @default(0)
+  appliedAt     DateTime                  @default(now())
+  reversedAt    DateTime?
+  allocations   OrderDiscountAllocation[]
+
+  @@unique([orderId, promotionId])
+  @@unique([id, orderId])
+  @@index([codeId])
+  @@map("order_discount")
+}
+
+model OrderDiscountAllocation {
+  discountId  String
+  orderId     String
+  discount    OrderDiscount @relation(fields: [discountId, orderId], references: [id, orderId], onDelete: Restrict)
+  orderLineId String
+  orderLine   OrderLine     @relation(fields: [orderLineId, orderId], references: [id, orderId], onDelete: Restrict)
+  amountMinor Int
+
+  @@id([discountId, orderLineId])
+  @@map("order_discount_allocation")
+}
+
+model ShippingMethod {
+  id              String     @id
+  carrierCode     String
+  name            String
+  minDeliveryDays Int
+  maxDeliveryDays Int
+  priceMinor      Int
+  currency        String     @db.Char(3)
+  active          Boolean    @default(true)
+  orders          Order[]
+  shipments       Shipment[]
+
+  @@map("shipping_method")
+}
+
+model Shipment {
+  id               String          @id
+  orderId          String          @unique
+  order            Order           @relation(fields: [orderId, shippingMethodId], references: [id, shippingMethodId], onDelete: Restrict)
+  shippingMethodId String
+  shippingMethod   ShippingMethod  @relation(fields: [shippingMethodId], references: [id], onDelete: Restrict)
+  carrierCode      String
+  trackingNumber   String
+  paymentReference String?
+  status           ShipmentStatus
+  failedAttempts   Int             @default(0)
+  createdAt        DateTime
+  updatedAt        DateTime
+  events           ShipmentEvent[]
+
+  @@unique([orderId, shippingMethodId])
+  @@unique([carrierCode, trackingNumber])
+  @@index([status, updatedAt])
+  @@map("shipment")
+}
+
+model ShipmentEvent {
+  shipmentId     String
+  shipment       Shipment        @relation(fields: [shipmentId], references: [id], onDelete: Restrict)
+  sequence       Int
+  previousStatus ShipmentStatus?
+  status         ShipmentStatus
+  occurredAt     DateTime
+  // Set on the first event produced by an external observation. Additional
+  // automatic transitions from the same observation can omit it.
+  observationKey String?
+  attemptCount   Int
+
+  @@id([shipmentId, sequence])
+  @@unique([shipmentId, observationKey])
+  @@map("shipment_event")
+}
+
+model Review {
+  id               String       @id @default(cuid())
+  orderLineId      String       @unique
+  orderLine        OrderLine    @relation(fields: [orderLineId], references: [id], onDelete: Restrict)
+  rating           Int
+  title            String?
+  body             String?
+  status           ReviewStatus @default(PENDING)
+  moderationReason String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([status, createdAt])
+  @@map("review")
+}
+
+model OrderEvent {
+  id         String               @id
+  orderId    String
+  order      Order                @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  type       String
+  source     String
+  payload    Json
+  occurredAt DateTime             @default(now())
+  deliveries OrderEventDelivery[]
+
+  @@unique([orderId, type])
+  @@map("order_event")
+}
+
+model OrderEventDelivery {
+  eventId       String
+  event         OrderEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  destination   String
+  attemptCount  Int        @default(0)
+  nextAttemptAt DateTime   @default(now())
+  deliveredAt   DateTime?
+  lastErrorCode String?
+
+  @@id([eventId, destination])
+  @@index([deliveredAt, nextAttemptAt])
+  @@map("order_event_delivery")
+}
+
+model EventReceipt {
+  consumer   String
+  source     String
+  eventId    String
+  receivedAt DateTime @default(now())
+
+  @@id([consumer, source, eventId])
+  @@map("event_receipt")
+}
