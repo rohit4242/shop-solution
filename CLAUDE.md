@@ -1,6 +1,6 @@
 # Repository instructions
 
-Read README.md, docs/architecture.md, docs/coding-conventions.md, docs/contribution-guide.md and the target feature README before editing. Documentation is the single source of truth.
+Read README.md, docs/README.md, docs/architecture.md, docs/coding-conventions.md, docs/contribution-guide.md and the target feature README before editing. Documentation is the single source of truth. Update affected guides and contracts and run pnpm docs:check.
 
 Respect feature public interfaces and server/client boundaries. Keep changes scoped; document contract and schema changes. Do not invent ownership for unassigned commerce domains. Follow explicit user authorization for external actions; never infer permission to publish, deploy, merge or push main from an implementation task.
 
