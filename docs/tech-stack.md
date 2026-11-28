@@ -30,6 +30,8 @@ The starter mounts Better Auth with the Prisma adapter and email/password enable
 
 Set a strong BETTER_AUTH_SECRET and the correct BETTER_AUTH_URL. Use HTTPS and appropriate deployment configuration outside localhost. Never share development databases or credentials with production.
 
+See the [shared authentication guide](authentication.md) for the proposed account lifecycle, permissions, environment setup, and feature cutover.
+
 ## Sources
 
 - https://nextjs.org/docs/app
