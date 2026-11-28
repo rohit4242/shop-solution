@@ -2,7 +2,10 @@
   "requiredOtherGroups": 2,
   "groups": {
     "accounting": [],
-    "admin-identity": [],
+    "admin-identity": [
+      "pietschmax",
+      "andreaspensenstadler"
+    ],
     "analytics-reporting": [],
     "crm": [],
     "logistics": [],
@@ -13,7 +16,10 @@
       "Rayyanmaq1"
     ],
     "reviews-ratings": [],
-    "search-recommendations": [],
+    "search-recommendations": [
+      "rohit4242",
+      "bastinicarlo"
+    ],
     "storefront": []
   }
 }
