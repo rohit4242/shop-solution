@@ -14,7 +14,7 @@ A shared university shop project built by ten teams in the Agent-Based Software 
 
 ## Current status
 
-The starter includes Next.js, shared UI components, PostgreSQL configuration, Prisma auth models and an initial migration, Better Auth wiring, validation examples, tests, and GitHub workflows. The initial GitHub CI run passed.
+The application includes Next.js, shared UI components, Better Auth wiring, and a canonical PostgreSQL schema managed by Prisma. The [shared shop data model](docs/commerce/README.md) maps the schema to team workflows. Apply the committed migrations to start with the auth and commerce tables. Feature integrations are delivered through their own PRs.
 
 The in-repository shop's business features are still scaffolds. The Search &
 Recommendations discovery workbench is available at
@@ -268,7 +268,7 @@ Browser → Route Handler / Server Action → Session + permission checks
 
 Server-rendered pages call feature server queries directly, rather than HTTP-fetching their own API. Business JSON endpoints will use `/api/v1/<resource>` with `{ data: ... }` for success and `{ error: { code, message } }` for errors. Better Auth keeps its own `/api/auth/*` response format. See [API conventions](docs/tech-stack.md).
 
-The auth foundation lives in `src/server/auth.ts`, with the browser client in `src/features/admin-identity/auth-client.ts`. Prisma currently defines `User`, `Session`, `Account`, and `Verification`. Admin & Identity owns the next steps: forms, session-aware screens, authorization, and agreed SSO/2FA/email flows. A signed-in account is not automatically an administrator.
+The auth foundation lives in `src/server/auth.ts`, with the browser client in `src/features/admin-identity/auth-client.ts`. Better Auth uses Prisma's `User`, `Session`, `Account`, and `Verification` models. Admin & Identity owns the next steps: forms, session-aware screens, authorization, and agreed SSO/2FA/email flows. A signed-in account is not automatically an administrator.
 
 ## Useful commands
 
