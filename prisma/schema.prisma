@@ -58,3 +58,143 @@ model Verification {
   @@index([identifier])
   @@map("verification")
 }
+
+// ---------------------------------------------------------------------------
+// Marketplace (owner: marketplace team; contract: src/features/marketplace/README.md)
+// Only the Marketplace feature writes these tables. Other features use its
+// documented server queries. userId and orderId are references, not foreign
+// keys: the user table belongs to Admin & Identity and orders are unassigned.
+
+enum MarketplaceSellerStatus {
+  pending
+  active
+  suspended
+  terminated
+}
+
+enum MarketplaceOfferStatus {
+  draft
+  pending
+  active
+  rejected
+  blocked
+  removed
+}
+
+enum MarketplaceCategory {
+  electronics
+  clothing
+  shoes
+  home_kitchen
+  sports_outdoors
+  beauty_personal_care
+  books_stationery
+  toys_games
+  other
+}
+
+enum MarketplaceInvoiceStatus {
+  pending
+  invoiced
+  refused
+}
+
+model MarketplaceSeller {
+  id                String                    @id // sel_…
+  userId            String // Better Auth user.id of the shop owner
+  displayName       String                    @db.VarChar(60)
+  legalName         String                    @db.VarChar(100)
+  contactEmail      String                    @db.VarChar(120)
+  addressStreet     String                    @db.VarChar(100)
+  addressPostalCode String                    @db.VarChar(12)
+  addressCity       String                    @db.VarChar(60)
+  addressCountry    String                    @db.Char(2) // ISO 3166-1 alpha-2
+  status            MarketplaceSellerStatus   @default(pending)
+  statusReason      String?                   @db.VarChar(300)
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+  offers            MarketplaceOffer[]
+  images            MarketplaceListingImage[]
+  saleLines         MarketplaceSaleLine[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("marketplace_seller")
+}
+
+model MarketplaceOffer {
+  id           String                      @id // off_…
+  productId    String                      @unique // prd_…, provisional until the class agrees product identity
+  sellerId     String
+  seller       MarketplaceSeller           @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  name         String                      @db.VarChar(80)
+  description  String                      @default("") @db.VarChar(1000)
+  category     MarketplaceCategory
+  attributes   Json                        @default("{}") // { [key: string]: string }, at most 10 keys
+  priceMinor   Int // VAT-inclusive cents; the cheapest variation when variations exist
+  currency     String                      @default("EUR") @db.Char(3)
+  stock        Int // sum of variation stock when variations exist
+  imageIds     String[] // ordered, main image first; MarketplaceListingImage ids
+  lengthCm     Float?
+  widthCm      Float?
+  heightCm     Float?
+  weightGrams  Float?
+  status       MarketplaceOfferStatus      @default(pending)
+  statusReason String?                     @db.VarChar(300)
+  createdAt    DateTime                    @default(now())
+  updatedAt    DateTime                    @updatedAt
+  variations   MarketplaceOfferVariation[]
+  saleLines    MarketplaceSaleLine[]
+
+  @@index([sellerId, status])
+  @@index([status, updatedAt, id]) // public catalog feed, updatedSince and cursor paging
+  @@map("marketplace_offer")
+}
+
+model MarketplaceOfferVariation {
+  id         String           @id // var_…
+  offerId    String
+  offer      MarketplaceOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  position   Int
+  label      String           @db.VarChar(80)
+  priceMinor Int
+  stock      Int
+  imageIds   String[] // empty: inherits the offer images
+
+  @@unique([offerId, position])
+  @@map("marketplace_offer_variation")
+}
+
+model MarketplaceListingImage {
+  id         String            @id // img_…
+  sellerId   String
+  seller     MarketplaceSeller @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  mediaType  String            @db.VarChar(32) // image/jpeg, image/png or image/webp
+  byteSize   Int
+  data       Bytes // up to 5 MiB; kept in Postgres until the class picks object storage
+  createdAt  DateTime          @default(now())
+
+  @@index([sellerId])
+  @@map("marketplace_listing_image")
+}
+
+model MarketplaceSaleLine {
+  id             String                   @id // sal_…
+  orderId        String // order reference from the (unassigned) order owner
+  offerId        String
+  offer          MarketplaceOffer         @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  sellerId       String
+  seller         MarketplaceSeller        @relation(fields: [sellerId], references: [id], onDelete: Restrict)
+  quantity       Int
+  unitPriceMinor Int // price at the time of sale
+  currency       String                   @default("EUR") @db.Char(3)
+  soldAt         DateTime                 @default(now())
+  invoiceStatus  MarketplaceInvoiceStatus @default(pending) // hand-off to Accounting
+  invoiceId      String?
+  invoiceError   String?
+
+  @@unique([orderId, offerId]) // one line per offer and order: DUPLICATE_SALE
+  @@index([sellerId, soldAt])
+  @@index([invoiceStatus])
+  @@map("marketplace_sale_line")
+}
