@@ -2,6 +2,8 @@
 
 A shared university shop project built by ten teams in the Agent-Based Software Development course. We work in one repository and one application, with feature ownership and pull-request reviews across groups.
 
+Use the [product brief](PRODUCT.md) and [shared design system](DESIGN.md) when designing or reviewing UI.
+
 **Repository:** [rohit4242/shop-solution](https://github.com/rohit4242/shop-solution)
 
 ## New to the project? Start here

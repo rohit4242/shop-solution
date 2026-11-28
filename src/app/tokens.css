@@ -1,19 +1,26 @@
 :root {
-  --background: #fafafa;
-  --foreground: #18181b;
-  --primary: #18181b;
-  --primary-foreground: #fafafa;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
+  --background: #f4f8f9;
+  --foreground: #1c303d;
+  --primary: #008083;
+  --primary-foreground: #fff;
+  --primary-hover: #00696d;
+  --link: #00696d;
+  --highlight: #00a19c;
+  --secondary: #e7edef;
+  --secondary-foreground: #263e4b;
+  --muted: #edf2f4;
+  --muted-foreground: #526876;
+  --accent: #e4f4f3;
+  --accent-foreground: #263e4b;
   --card: #fff;
-  --card-foreground: #18181b;
-  --destructive: #dc2626;
-  --destructive-foreground: #fff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #a1a1aa;
+  --card-foreground: #1c303d;
+  --destructive: #a22a36;
+  --destructive-foreground: #fffdf8;
+  --border: #d8e3e9;
+  --border-emphasis: #91a3b1;
+  --input: #708090;
+  --ring: #008083;
+  --font-shop-sans:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-shop-display: Georgia, "Times New Roman", serif;
 }

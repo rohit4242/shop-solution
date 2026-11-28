@@ -2,10 +2,15 @@
 @import "./tokens.css";
 
 @theme inline {
+  --font-sans: var(--font-shop-sans);
+  --font-display: var(--font-shop-display);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-link: var(--link);
+  --color-highlight: var(--highlight);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -17,6 +22,7 @@
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
+  --color-border-emphasis: var(--border-emphasis);
   --color-input: var(--input);
   --color-ring: var(--ring);
 }
@@ -25,6 +31,10 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-sans text-foreground;
+  }
+  :where(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
   }
 }

@@ -12,6 +12,8 @@ Read docs/feature-guide.md for the annotated folder tree, naming/import conventi
 
 For database work, read prisma/README.md and the affected feature contracts. Reuse the canonical shop entities and IDs. Include a reviewed migration and identify affected consumers for schema changes. Use a disposable local database for migration tests. Follow docs/contribution-guide.md and the PR template when preparing changes for review.
 
+For UI work, read PRODUCT.md and DESIGN.md. Reuse shared semantic tokens and components, and verify relevant screen states at mobile and desktop widths.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know
