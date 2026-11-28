@@ -38,3 +38,4 @@ export {
 export { getListingImage, uploadListingImage } from "./services/images";
 export { readActor, type Actor, type Permission } from "./access";
 export { MarketplaceError } from "./errors";
+export { marketplaceRoutes } from "./api-handlers";
